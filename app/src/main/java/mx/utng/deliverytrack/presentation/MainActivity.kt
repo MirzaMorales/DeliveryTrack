@@ -8,12 +8,14 @@ import android.os.Vibrator
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -88,7 +90,7 @@ class MainActivity : ComponentActivity() {
                     }
                 } else {
                     resetOrderState()
-                    statusMessage = "Sin entregas activas"
+                    statusMessage = ""
                 }
             },
             onStatusUpdateResponse = { success, data ->
@@ -299,24 +301,30 @@ fun WearApp(
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                                    .padding(
+                                    start = 8.dp,
+                                    end = 8.dp,
+                                    bottom = 10.dp  )
                             )
                         }
 
                         // Concatenated Address - Large and highly readable
                         item {
-                            Text(
-                                text = addressText,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color.White,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 10.dp, vertical = 4.dp),
-                                fontSize = 16.sp
-                            )
-                        }
+                                Text(
+                                    text = "📍 $addressText",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(
+                                            start = 8.dp,
+                                            end = 8.dp,
+                                            bottom = 10.dp  ),
+                                    textAlign = TextAlign.Center,
+                                    color = Color.White,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
 
+                                )
+                        }
                         // Description
                         if (orderDescription.isNotEmpty()) {
                             item {
@@ -337,55 +345,67 @@ fun WearApp(
                             when (orderStatus) {
                                 2 -> { // Pendiente: Show Accept & Reject side-by-side
                                     Row(
-                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {
                                         // Reject (Red)
                                         Button(
                                             onClick = onReject,
-                                            modifier = Modifier.weight(1f),
+                                            modifier = Modifier.weight(0.30f).height(36.dp),
                                             colors = ButtonDefaults.buttonColors(
                                                 containerColor = Color(0xFFD32F2F),
                                                 contentColor = Color.White
                                             )
                                         ) {
-                                            Text("Rechazar", fontSize = 11.sp)
+                                            Text("Rechazar", fontSize = 10.sp)
                                         }
                                         // Accept (Green)
                                         Button(
                                             onClick = onAccept,
-                                            modifier = Modifier.weight(1f),
+                                            modifier = Modifier.weight(0.30f).height(36.dp),
                                             colors = ButtonDefaults.buttonColors(
                                                 containerColor = Color(0xFF388E3C),
                                                 contentColor = Color.White
                                             )
                                         ) {
-                                            Text("Aceptar", fontSize = 11.sp)
+                                            Text(
+                                                text = "Aceptar",
+                                                fontSize = 10.sp,
+                                                textAlign = TextAlign.Center,
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
                                         }
                                     }
                                 }
                                 1 -> { // Aceptado: Show "En camino" (Blue)
                                     Button(
                                         onClick = onEnCamino,
-                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                                        modifier = Modifier.fillMaxWidth().height(36.dp).padding(horizontal = 20.dp),
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = Color(0xFF1976D2),
                                             contentColor = Color.White
                                         )
                                     ) {
-                                        Text("En camino", fontSize = 13.sp)
+                                        Text("En camino",
+                                            fontSize = 13.sp,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
                                     }
                                 }
                                 3, 5 -> { // En ruta or Retrasado: Show "Entregado" (Orange)
                                     Button(
                                         onClick = onEntregado,
-                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                                        modifier = Modifier.fillMaxWidth().height(36.dp).padding(horizontal = 20.dp),
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = Color(0xFFF57C00),
                                             contentColor = Color.White
                                         )
                                     ) {
-                                        Text("Entregado", fontSize = 13.sp)
+                                        Text("Entregado",
+                                            fontSize = 13.sp,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier.fillMaxWidth())
                                     }
                                 }
                             }
@@ -413,9 +433,13 @@ fun WearApp(
                         item {
                             Button(
                                 onClick = onManualRefresh,
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)
+                                modifier = Modifier.fillMaxWidth().height(36.dp).padding(horizontal = 28.dp)
                             ) {
-                                Text("Buscar Pedidos")
+                                Text("Buscar Pedidos",
+                                    fontSize = 10.sp,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
+                                    )
                             }
                         }
                     }
