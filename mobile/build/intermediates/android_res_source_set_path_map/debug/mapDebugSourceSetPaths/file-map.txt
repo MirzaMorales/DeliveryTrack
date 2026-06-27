@@ -1,8 +1,0 @@
-mx.utng.deliverytrack.mobile-pngs-0 C:\Users\natzl\AndroidStudioProjects\DeliveryTrack\mobile\build\generated\res\pngs\debug
-mx.utng.deliverytrack.mobile-updated_navigation_xml-1 C:\Users\natzl\AndroidStudioProjects\DeliveryTrack\mobile\build\generated\updated_navigation_xml\debug
-mx.utng.deliverytrack.mobile-packageDebugResources-2 C:\Users\natzl\AndroidStudioProjects\DeliveryTrack\mobile\build\intermediates\incremental\debug\packageDebugResources\merged.dir
-mx.utng.deliverytrack.mobile-packageDebugResources-3 C:\Users\natzl\AndroidStudioProjects\DeliveryTrack\mobile\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
-mx.utng.deliverytrack.mobile-debug-4 C:\Users\natzl\AndroidStudioProjects\DeliveryTrack\mobile\build\intermediates\merged_res\debug\mergeDebugResources
-mx.utng.deliverytrack.mobile-debug-5 C:\Users\natzl\AndroidStudioProjects\DeliveryTrack\mobile\src\debug\res
-mx.utng.deliverytrack.mobile-main-6 C:\Users\natzl\AndroidStudioProjects\DeliveryTrack\mobile\src\main\res
-gradleHome-0 C:\Users\natzl\.gradle

@@ -1,6 +1,6 @@
 [
     {
-        "merged": "mx.utng.deliverytrack.mobile-debug-40:/xml_network_security_config.xml.flat",
-        "source": "mx.utng.deliverytrack.mobile-main-42:/xml/network_security_config.xml"
+        "merged": "mx.utng.deliverytrack.mobile-debug-41:/xml_network_security_config.xml.flat",
+        "source": "mx.utng.deliverytrack.mobile-main-43:/xml/network_security_config.xml"
     }
 ]

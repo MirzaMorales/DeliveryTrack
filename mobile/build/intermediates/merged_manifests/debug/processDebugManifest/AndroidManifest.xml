@@ -35,6 +35,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name="mx.utng.deliverytrack.mobile.NuevoPedidoActivity"
+            android:exported="false" />
 
         <service
             android:name="mx.utng.deliverytrack.mobile.MobileWearableListenerService"
