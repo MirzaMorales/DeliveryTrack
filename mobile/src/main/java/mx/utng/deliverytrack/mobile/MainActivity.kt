@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.android.gms.wearable.Wearable
+import android.content.Intent
 
 class MainActivity : ComponentActivity() {
 
@@ -33,6 +34,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val context = this
         setContent {
             MaterialTheme {
                 Column(
@@ -86,6 +88,18 @@ class MainActivity : ComponentActivity() {
                         )
                     ) {
                         Text("Simulate Active Order Canceled")
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(
+                        onClick = {
+                            context.startActivity(Intent(context, NuevoPedidoActivity::class.java))
+                        },
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A3A6B))
+                    ) {
+                        Text("Crear Nuevo Pedido")
                     }
                 }
             }

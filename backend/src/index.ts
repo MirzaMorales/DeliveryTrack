@@ -134,7 +134,71 @@ app.patch('/api/pedidos/:id/estatus', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * GET /api/usuarios/repartidores
+ * Returns all users with rol = 2 (repartidores) and estatus = 1 (activos)
+ */
+app.get('/api/usuarios/repartidores', async (req: Request, res: Response) => {
+  try {
+    const result = await query(
+      `SELECT id_user, nombre_completo, telefono 
+       FROM usuario 
+       WHERE rol = 2 AND estatus = 1 
+       ORDER BY nombre_completo ASC`,
+      []
+    );
+    res.json(result.rows);
+  } catch (error: any) {
+    console.error('Error fetching repartidores:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
+
+/**
+ * POST /api/pedidos
+ * Body: { nombre_cliente, telefono, direccion, referencia_lugar, descripcion_pedido, id_repartidor }
+ * Creates a new order with estatus = 2 (Pendiente) and logs it in historialestatus
+ */
+app.post('/api/pedidos', async (req: Request, res: Response) => {
+  const { nombre_cliente, telefono, direccion, referencia_lugar, descripcion_pedido, id_repartidor } = req.body;
+
+  if (!nombre_cliente || !telefono || !direccion || !id_repartidor) {
+    return res.status(400).json({ error: 'nombre_cliente, telefono, direccion e id_repartidor son requeridos' });
+  }
+
+  try {
+    await query('BEGIN');
+
+    const insertResult = await query(
+      `INSERT INTO pedido (nombre_cliente, telefono, direccion, referencia_lugar, descripcion_pedido, estatus, id_repartidor, fecha, hora)
+       VALUES ($1, $2, $3, $4, $5, 2, $6, CURRENT_DATE, CURRENT_TIMESTAMP)
+       RETURNING *`,
+      [nombre_cliente, telefono, direccion, referencia_lugar || '', descripcion_pedido || '', id_repartidor]
+    );
+
+    const newOrder = insertResult.rows[0];
+
+    await query(
+      `INSERT INTO historialestatus (estatus, id_usuario, id_pedido)
+       VALUES ('Pendiente', $1, $2)`,
+      [id_repartidor, newOrder.id_pedido]
+    );
+
+    await query('COMMIT');
+
+    res.status(201).json({
+      message: 'Pedido creado exitosamente',
+      pedido: newOrder
+    });
+  } catch (error: any) {
+    await query('ROLLBACK');
+    console.error('Error creating order:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
+
 // Start Server
 app.listen(port, () => {
   console.log(`[server]: Server is running at http://localhost:${port}`);
 });
+
