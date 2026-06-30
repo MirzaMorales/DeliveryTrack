@@ -5,7 +5,10 @@ Plataforma de telemetría y gestión de entregas en tiempo real para repartidore
 ## Datos del proyecto
 
 - **Nombre del proyecto:** DeliveryTrack
-- **Estudiante:** Mirza Natzielly Morales Lezama
+- **Estudiantes:**
+  - Carmen Catalina Delgado Manzano
+  - Mirza Natzielly Morales Lezama
+  - Gael Quintana Romero
 - **Grupo:** GIDS6093
 - **Institución:** Universidad Tecnológica del Norte de Guanajuato (UTNG)
 
