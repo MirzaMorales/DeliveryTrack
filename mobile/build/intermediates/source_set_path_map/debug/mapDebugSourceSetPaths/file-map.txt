@@ -1,45 +1,45 @@
-mx.utng.deliverytrack.mobile-core-runtime-2.2.0-0 C:\Users\zackg\.gradle\caches\9.4.1\transforms\02bbc632c8fc7a892ad1522c75636680\transformed\core-runtime-2.2.0\res
-mx.utng.deliverytrack.mobile-activity-ktx-1.13.0-1 C:\Users\zackg\.gradle\caches\9.4.1\transforms\04c494d054f3a5f9507bff7cf44b2a33\transformed\activity-ktx-1.13.0\res
-mx.utng.deliverytrack.mobile-activity-1.13.0-2 C:\Users\zackg\.gradle\caches\9.4.1\transforms\0631c3fd56f5037ec4647042aac1d4ab\transformed\activity-1.13.0\res
-mx.utng.deliverytrack.mobile-core-viewtree-1.0.0-3 C:\Users\zackg\.gradle\caches\9.4.1\transforms\06fcdb1d17c0e6113130b838c5186906\transformed\core-viewtree-1.0.0\res
-mx.utng.deliverytrack.mobile-profileinstaller-1.4.0-4 C:\Users\zackg\.gradle\caches\9.4.1\transforms\0b7c4490cbec55043b73bb351c88f6a0\transformed\profileinstaller-1.4.0\res
-mx.utng.deliverytrack.mobile-lifecycle-viewmodel-ktx-2.9.4-5 C:\Users\zackg\.gradle\caches\9.4.1\transforms\0f3cc172504409c046ce08d40df1ecf3\transformed\lifecycle-viewmodel-ktx-2.9.4\res
-mx.utng.deliverytrack.mobile-material3-release-6 C:\Users\zackg\.gradle\caches\9.4.1\transforms\17d61c38f5da64a37236ac97e774468d\transformed\material3-release\res
-mx.utng.deliverytrack.mobile-lifecycle-livedata-core-2.9.4-7 C:\Users\zackg\.gradle\caches\9.4.1\transforms\19683f949cdf75086fdef2e129a0646c\transformed\lifecycle-livedata-core-2.9.4\res
-mx.utng.deliverytrack.mobile-lifecycle-runtime-compose-release-8 C:\Users\zackg\.gradle\caches\9.4.1\transforms\1e5b97933b1a270b1c115f7515e4cfc5\transformed\lifecycle-runtime-compose-release\res
-mx.utng.deliverytrack.mobile-activity-compose-1.13.0-9 C:\Users\zackg\.gradle\caches\9.4.1\transforms\22182467838c7f576aff40aa90fbd301\transformed\activity-compose-1.13.0\res
-mx.utng.deliverytrack.mobile-animation-core-release-10 C:\Users\zackg\.gradle\caches\9.4.1\transforms\232a9009af46c595e098e5fc60ab7de2\transformed\animation-core-release\res
-mx.utng.deliverytrack.mobile-lifecycle-runtime-release-11 C:\Users\zackg\.gradle\caches\9.4.1\transforms\25d4ea120525225ccbbed74b8cae2304\transformed\lifecycle-runtime-release\res
-mx.utng.deliverytrack.mobile-lifecycle-livedata-core-ktx-2.9.4-12 C:\Users\zackg\.gradle\caches\9.4.1\transforms\320edb1075d77f63a350ce6ee74574fa\transformed\lifecycle-livedata-core-ktx-2.9.4\res
-mx.utng.deliverytrack.mobile-ui-graphics-release-13 C:\Users\zackg\.gradle\caches\9.4.1\transforms\36be337c25096cbbea3463df828cf706\transformed\ui-graphics-release\res
-mx.utng.deliverytrack.mobile-animation-release-14 C:\Users\zackg\.gradle\caches\9.4.1\transforms\3a2f5a24cc94ec90464f5b490bec18c8\transformed\animation-release\res
-mx.utng.deliverytrack.mobile-savedstate-release-15 C:\Users\zackg\.gradle\caches\9.4.1\transforms\3b5fed94725bd620f85468a36d29ca48\transformed\savedstate-release\res
-mx.utng.deliverytrack.mobile-navigationevent-16 C:\Users\zackg\.gradle\caches\9.4.1\transforms\5774dc0e28502363912215fa7624c42a\transformed\navigationevent\res
-mx.utng.deliverytrack.mobile-tracing-1.2.0-17 C:\Users\zackg\.gradle\caches\9.4.1\transforms\5c55b69702920bdf9483440ccfeffd36\transformed\tracing-1.2.0\res
-mx.utng.deliverytrack.mobile-core-ktx-1.18.0-18 C:\Users\zackg\.gradle\caches\9.4.1\transforms\63707cf5b2440e887f0fa96139b807a7\transformed\core-ktx-1.18.0\res
-mx.utng.deliverytrack.mobile-ui-release-19 C:\Users\zackg\.gradle\caches\9.4.1\transforms\65691485597174fc54fe4d51ab1584ea\transformed\ui-release\res
-mx.utng.deliverytrack.mobile-play-services-base-18.5.0-20 C:\Users\zackg\.gradle\caches\9.4.1\transforms\6f740323837c784aeae13ab2166d7ded\transformed\play-services-base-18.5.0\res
-mx.utng.deliverytrack.mobile-play-services-basement-18.9.0-21 C:\Users\zackg\.gradle\caches\9.4.1\transforms\6fb634d233a08d0ddddad756bf1777ca\transformed\play-services-basement-18.9.0\res
-mx.utng.deliverytrack.mobile-emoji2-1.4.0-22 C:\Users\zackg\.gradle\caches\9.4.1\transforms\7072c1af505ed2c4127fa96d5a583b96\transformed\emoji2-1.4.0\res
-mx.utng.deliverytrack.mobile-core-1.18.0-23 C:\Users\zackg\.gradle\caches\9.4.1\transforms\7f9491a5e4a3a2406d77fbeca8898037\transformed\core-1.18.0\res
-mx.utng.deliverytrack.mobile-startup-runtime-1.1.1-24 C:\Users\zackg\.gradle\caches\9.4.1\transforms\87d9622b6dc1d774413dea051a3b4717\transformed\startup-runtime-1.1.1\res
-mx.utng.deliverytrack.mobile-foundation-layout-release-25 C:\Users\zackg\.gradle\caches\9.4.1\transforms\9246d15fd00633ebba5c1838369e13a5\transformed\foundation-layout-release\res
-mx.utng.deliverytrack.mobile-material-icons-core-release-26 C:\Users\zackg\.gradle\caches\9.4.1\transforms\bb86ca586b06cf494730c71821c2ebc3\transformed\material-icons-core-release\res
-mx.utng.deliverytrack.mobile-lifecycle-process-2.9.4-27 C:\Users\zackg\.gradle\caches\9.4.1\transforms\bc490d6b3905fe217c27944621bc0207\transformed\lifecycle-process-2.9.4\res
-mx.utng.deliverytrack.mobile-graphics-path-1.0.1-28 C:\Users\zackg\.gradle\caches\9.4.1\transforms\beb5321bcf0ce194f8d642c3a3a4fa89\transformed\graphics-path-1.0.1\res
-mx.utng.deliverytrack.mobile-savedstate-ktx-1.3.3-29 C:\Users\zackg\.gradle\caches\9.4.1\transforms\c3134526e4ff81f7c8c4cf17f3f9d20e\transformed\savedstate-ktx-1.3.3\res
-mx.utng.deliverytrack.mobile-material-ripple-release-30 C:\Users\zackg\.gradle\caches\9.4.1\transforms\cb4191c8b2ee0a4c7330e89f916cc645\transformed\material-ripple-release\res
-mx.utng.deliverytrack.mobile-annotation-experimental-1.4.1-31 C:\Users\zackg\.gradle\caches\9.4.1\transforms\ce74e20df3f6ca7553aa968933202c8c\transformed\annotation-experimental-1.4.1\res
-mx.utng.deliverytrack.mobile-foundation-release-32 C:\Users\zackg\.gradle\caches\9.4.1\transforms\d513b6564edf747cc95bb39abc7fac39\transformed\foundation-release\res
-mx.utng.deliverytrack.mobile-lifecycle-viewmodel-release-33 C:\Users\zackg\.gradle\caches\9.4.1\transforms\e05d13786b14d5b2aced747f287be470\transformed\lifecycle-viewmodel-release\res
-mx.utng.deliverytrack.mobile-customview-poolingcontainer-1.0.0-34 C:\Users\zackg\.gradle\caches\9.4.1\transforms\e5b3c60bf4a4e2e2246cb8c0de55a09f\transformed\customview-poolingcontainer-1.0.0\res
-mx.utng.deliverytrack.mobile-lifecycle-viewmodel-savedstate-release-35 C:\Users\zackg\.gradle\caches\9.4.1\transforms\ee9a51ecb856c213c76191a09fb28877\transformed\lifecycle-viewmodel-savedstate-release\res
-mx.utng.deliverytrack.mobile-lifecycle-livedata-2.9.4-36 C:\Users\zackg\.gradle\caches\9.4.1\transforms\f8874f09f56a247dbd35231c86dbcbd9\transformed\lifecycle-livedata-2.9.4\res
-mx.utng.deliverytrack.mobile-pngs-37 C:\Users\zackg\Documents\Aprendizaje\UTNG_9no\dipositivos inteligentes\u2\DeliveryTrack\mobile\build\generated\res\pngs\debug
-mx.utng.deliverytrack.mobile-resValues-38 C:\Users\zackg\Documents\Aprendizaje\UTNG_9no\dipositivos inteligentes\u2\DeliveryTrack\mobile\build\generated\res\resValues\debug
-mx.utng.deliverytrack.mobile-updated_navigation_xml-39 C:\Users\zackg\Documents\Aprendizaje\UTNG_9no\dipositivos inteligentes\u2\DeliveryTrack\mobile\build\generated\updated_navigation_xml\debug
-mx.utng.deliverytrack.mobile-packageDebugResources-40 C:\Users\zackg\Documents\Aprendizaje\UTNG_9no\dipositivos inteligentes\u2\DeliveryTrack\mobile\build\intermediates\incremental\debug\packageDebugResources\merged.dir
-mx.utng.deliverytrack.mobile-packageDebugResources-41 C:\Users\zackg\Documents\Aprendizaje\UTNG_9no\dipositivos inteligentes\u2\DeliveryTrack\mobile\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
-mx.utng.deliverytrack.mobile-debug-42 C:\Users\zackg\Documents\Aprendizaje\UTNG_9no\dipositivos inteligentes\u2\DeliveryTrack\mobile\build\intermediates\merged_res\debug\mergeDebugResources
-mx.utng.deliverytrack.mobile-debug-43 C:\Users\zackg\Documents\Aprendizaje\UTNG_9no\dipositivos inteligentes\u2\DeliveryTrack\mobile\src\debug\res
-mx.utng.deliverytrack.mobile-main-44 C:\Users\zackg\Documents\Aprendizaje\UTNG_9no\dipositivos inteligentes\u2\DeliveryTrack\mobile\src\main\res
+mx.utng.deliverytrack.mobile-core-runtime-2.2.0-0 C:\Users\marco\.gradle\caches\9.4.1\transforms\02bbc632c8fc7a892ad1522c75636680\transformed\core-runtime-2.2.0\res
+mx.utng.deliverytrack.mobile-activity-ktx-1.13.0-1 C:\Users\marco\.gradle\caches\9.4.1\transforms\04c494d054f3a5f9507bff7cf44b2a33\transformed\activity-ktx-1.13.0\res
+mx.utng.deliverytrack.mobile-activity-1.13.0-2 C:\Users\marco\.gradle\caches\9.4.1\transforms\0631c3fd56f5037ec4647042aac1d4ab\transformed\activity-1.13.0\res
+mx.utng.deliverytrack.mobile-core-viewtree-1.0.0-3 C:\Users\marco\.gradle\caches\9.4.1\transforms\06fcdb1d17c0e6113130b838c5186906\transformed\core-viewtree-1.0.0\res
+mx.utng.deliverytrack.mobile-profileinstaller-1.4.0-4 C:\Users\marco\.gradle\caches\9.4.1\transforms\0b7c4490cbec55043b73bb351c88f6a0\transformed\profileinstaller-1.4.0\res
+mx.utng.deliverytrack.mobile-lifecycle-viewmodel-ktx-2.9.4-5 C:\Users\marco\.gradle\caches\9.4.1\transforms\0f3cc172504409c046ce08d40df1ecf3\transformed\lifecycle-viewmodel-ktx-2.9.4\res
+mx.utng.deliverytrack.mobile-material3-release-6 C:\Users\marco\.gradle\caches\9.4.1\transforms\17d61c38f5da64a37236ac97e774468d\transformed\material3-release\res
+mx.utng.deliverytrack.mobile-lifecycle-livedata-core-2.9.4-7 C:\Users\marco\.gradle\caches\9.4.1\transforms\19683f949cdf75086fdef2e129a0646c\transformed\lifecycle-livedata-core-2.9.4\res
+mx.utng.deliverytrack.mobile-lifecycle-runtime-compose-release-8 C:\Users\marco\.gradle\caches\9.4.1\transforms\1e5b97933b1a270b1c115f7515e4cfc5\transformed\lifecycle-runtime-compose-release\res
+mx.utng.deliverytrack.mobile-activity-compose-1.13.0-9 C:\Users\marco\.gradle\caches\9.4.1\transforms\22182467838c7f576aff40aa90fbd301\transformed\activity-compose-1.13.0\res
+mx.utng.deliverytrack.mobile-animation-core-release-10 C:\Users\marco\.gradle\caches\9.4.1\transforms\232a9009af46c595e098e5fc60ab7de2\transformed\animation-core-release\res
+mx.utng.deliverytrack.mobile-lifecycle-runtime-release-11 C:\Users\marco\.gradle\caches\9.4.1\transforms\25d4ea120525225ccbbed74b8cae2304\transformed\lifecycle-runtime-release\res
+mx.utng.deliverytrack.mobile-lifecycle-livedata-core-ktx-2.9.4-12 C:\Users\marco\.gradle\caches\9.4.1\transforms\320edb1075d77f63a350ce6ee74574fa\transformed\lifecycle-livedata-core-ktx-2.9.4\res
+mx.utng.deliverytrack.mobile-ui-graphics-release-13 C:\Users\marco\.gradle\caches\9.4.1\transforms\36be337c25096cbbea3463df828cf706\transformed\ui-graphics-release\res
+mx.utng.deliverytrack.mobile-animation-release-14 C:\Users\marco\.gradle\caches\9.4.1\transforms\3a2f5a24cc94ec90464f5b490bec18c8\transformed\animation-release\res
+mx.utng.deliverytrack.mobile-savedstate-release-15 C:\Users\marco\.gradle\caches\9.4.1\transforms\3b5fed94725bd620f85468a36d29ca48\transformed\savedstate-release\res
+mx.utng.deliverytrack.mobile-navigationevent-16 C:\Users\marco\.gradle\caches\9.4.1\transforms\5774dc0e28502363912215fa7624c42a\transformed\navigationevent\res
+mx.utng.deliverytrack.mobile-tracing-1.2.0-17 C:\Users\marco\.gradle\caches\9.4.1\transforms\5c55b69702920bdf9483440ccfeffd36\transformed\tracing-1.2.0\res
+mx.utng.deliverytrack.mobile-core-ktx-1.18.0-18 C:\Users\marco\.gradle\caches\9.4.1\transforms\63707cf5b2440e887f0fa96139b807a7\transformed\core-ktx-1.18.0\res
+mx.utng.deliverytrack.mobile-ui-release-19 C:\Users\marco\.gradle\caches\9.4.1\transforms\65691485597174fc54fe4d51ab1584ea\transformed\ui-release\res
+mx.utng.deliverytrack.mobile-play-services-base-18.5.0-20 C:\Users\marco\.gradle\caches\9.4.1\transforms\6f740323837c784aeae13ab2166d7ded\transformed\play-services-base-18.5.0\res
+mx.utng.deliverytrack.mobile-play-services-basement-18.9.0-21 C:\Users\marco\.gradle\caches\9.4.1\transforms\6fb634d233a08d0ddddad756bf1777ca\transformed\play-services-basement-18.9.0\res
+mx.utng.deliverytrack.mobile-emoji2-1.4.0-22 C:\Users\marco\.gradle\caches\9.4.1\transforms\7072c1af505ed2c4127fa96d5a583b96\transformed\emoji2-1.4.0\res
+mx.utng.deliverytrack.mobile-core-1.18.0-23 C:\Users\marco\.gradle\caches\9.4.1\transforms\7f9491a5e4a3a2406d77fbeca8898037\transformed\core-1.18.0\res
+mx.utng.deliverytrack.mobile-startup-runtime-1.1.1-24 C:\Users\marco\.gradle\caches\9.4.1\transforms\87d9622b6dc1d774413dea051a3b4717\transformed\startup-runtime-1.1.1\res
+mx.utng.deliverytrack.mobile-foundation-layout-release-25 C:\Users\marco\.gradle\caches\9.4.1\transforms\9246d15fd00633ebba5c1838369e13a5\transformed\foundation-layout-release\res
+mx.utng.deliverytrack.mobile-material-icons-core-release-26 C:\Users\marco\.gradle\caches\9.4.1\transforms\bb86ca586b06cf494730c71821c2ebc3\transformed\material-icons-core-release\res
+mx.utng.deliverytrack.mobile-lifecycle-process-2.9.4-27 C:\Users\marco\.gradle\caches\9.4.1\transforms\bc490d6b3905fe217c27944621bc0207\transformed\lifecycle-process-2.9.4\res
+mx.utng.deliverytrack.mobile-graphics-path-1.0.1-28 C:\Users\marco\.gradle\caches\9.4.1\transforms\beb5321bcf0ce194f8d642c3a3a4fa89\transformed\graphics-path-1.0.1\res
+mx.utng.deliverytrack.mobile-savedstate-ktx-1.3.3-29 C:\Users\marco\.gradle\caches\9.4.1\transforms\c3134526e4ff81f7c8c4cf17f3f9d20e\transformed\savedstate-ktx-1.3.3\res
+mx.utng.deliverytrack.mobile-material-ripple-release-30 C:\Users\marco\.gradle\caches\9.4.1\transforms\cb4191c8b2ee0a4c7330e89f916cc645\transformed\material-ripple-release\res
+mx.utng.deliverytrack.mobile-annotation-experimental-1.4.1-31 C:\Users\marco\.gradle\caches\9.4.1\transforms\ce74e20df3f6ca7553aa968933202c8c\transformed\annotation-experimental-1.4.1\res
+mx.utng.deliverytrack.mobile-foundation-release-32 C:\Users\marco\.gradle\caches\9.4.1\transforms\d513b6564edf747cc95bb39abc7fac39\transformed\foundation-release\res
+mx.utng.deliverytrack.mobile-lifecycle-viewmodel-release-33 C:\Users\marco\.gradle\caches\9.4.1\transforms\e05d13786b14d5b2aced747f287be470\transformed\lifecycle-viewmodel-release\res
+mx.utng.deliverytrack.mobile-customview-poolingcontainer-1.0.0-34 C:\Users\marco\.gradle\caches\9.4.1\transforms\e5b3c60bf4a4e2e2246cb8c0de55a09f\transformed\customview-poolingcontainer-1.0.0\res
+mx.utng.deliverytrack.mobile-lifecycle-viewmodel-savedstate-release-35 C:\Users\marco\.gradle\caches\9.4.1\transforms\ee9a51ecb856c213c76191a09fb28877\transformed\lifecycle-viewmodel-savedstate-release\res
+mx.utng.deliverytrack.mobile-lifecycle-livedata-2.9.4-36 C:\Users\marco\.gradle\caches\9.4.1\transforms\f8874f09f56a247dbd35231c86dbcbd9\transformed\lifecycle-livedata-2.9.4\res
+mx.utng.deliverytrack.mobile-pngs-37 C:\Users\marco\AndroidStudioProjects\DeliveryTrack\mobile\build\generated\res\pngs\debug
+mx.utng.deliverytrack.mobile-resValues-38 C:\Users\marco\AndroidStudioProjects\DeliveryTrack\mobile\build\generated\res\resValues\debug
+mx.utng.deliverytrack.mobile-updated_navigation_xml-39 C:\Users\marco\AndroidStudioProjects\DeliveryTrack\mobile\build\generated\updated_navigation_xml\debug
+mx.utng.deliverytrack.mobile-packageDebugResources-40 C:\Users\marco\AndroidStudioProjects\DeliveryTrack\mobile\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+mx.utng.deliverytrack.mobile-packageDebugResources-41 C:\Users\marco\AndroidStudioProjects\DeliveryTrack\mobile\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+mx.utng.deliverytrack.mobile-debug-42 C:\Users\marco\AndroidStudioProjects\DeliveryTrack\mobile\build\intermediates\merged_res\debug\mergeDebugResources
+mx.utng.deliverytrack.mobile-debug-43 C:\Users\marco\AndroidStudioProjects\DeliveryTrack\mobile\src\debug\res
+mx.utng.deliverytrack.mobile-main-44 C:\Users\marco\AndroidStudioProjects\DeliveryTrack\mobile\src\main\res
