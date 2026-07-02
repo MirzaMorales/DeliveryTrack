@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="mobile">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-06-26T18:50:21.561665700Z">
+        <DropdownSelection timestamp="2026-07-02T04:47:00.267657700Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\zackg\.android\avd\Medium_Phone.avd" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\marco\.android\avd\Medium_Phone.avd" />
             </handle>
           </Target>
         </DropdownSelection>
@@ -15,17 +15,14 @@
       </SelectionState>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-06-26T18:55:42.053010500Z">
+        <DropdownSelection timestamp="2026-07-02T04:44:07.667655400Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\zackg\.android\avd\Wear_OS_Large_Round.avd" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\marco\.android\avd\Medium_Phone.avd" />
             </handle>
           </Target>
         </DropdownSelection>
         <DialogSelection />
-      </SelectionState>
-      <SelectionState runConfigName="MainActivity">
-        <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>
   </component>

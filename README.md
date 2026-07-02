@@ -180,6 +180,51 @@ docker exec -it deliverytrack-db psql -U postgres -d deliverytrack \
 
 > Agrega aquí las capturas de pantalla de la app del reloj (WearOS), la app móvil (Mobile Hub) y el backend en ejecución.
 
-| Wearable (WearOS) | App móvil (Mobile Hub) |
-|---|---|
-| ![Pantalla del reloj](docs/screenshots/wear-pedido.png) | ![Pantalla del móvil](docs/screenshots/mobile-hub.png) |
+### Info Base de datos
+![Sin Pedidos Asignados Para Repartidor Nuevos](screenshots/TablaPedidoSinRegistroNuevo.png)
+
+### Wearable (WearOS)
+
+![Sin Pedidos Asignados Para Repartidor Wear](screenshots/sinPedidos.png)
+
+### App móvil (Mobile Hub)
+![PantallamenuAdmin](screenshots/EnviarPedidosTel.png)
+
+![Pantalla móvil Crear Nuevo Pedido](screenshots/CrearPedido.png) 
+
+### Info Base de datos
+![Pedidos capturados en Base de datos](screenshots/tablaPedido2registrosEstatus2.png)
+
+![HistorialEstatusPedidos](screenshots/Estatus1-2.png)
+
+### Wearable (WearOS)
+![Buscar Pedidos Wear](screenshots/clicBuscarPedidos.png)
+
+![Pedido Asignado](screenshots/SolicitudPedidoCatalina0.png)
+
+![Pedido Asignado](screenshots/SolicitudPedidoCatalina.png)
+
+![Iniciar Recorrido del pedido](screenshots/IniciarRecorridoPedido.png)
+
+![Entregar pedido](screenshots/pedidoCuandoEntregas.png)
+
+### Info Base de datos
+![Pedidos capturados en Base de datos entregado](screenshots/tablaPedido2registros.png)
+
+### App móvil nuevo registro
+
+![Pantalla móvil Crear Nuevo Pedido](screenshots/CrearPedido2Movil.png)
+
+### Info Base de datos
+![Pedidos capturados en Base de datos](screenshots/PedidosTabla.png)
+
+### Wearable (WearOS)
+![Pedido](screenshots/InfoPedidoWear.png)
+
+![Pedido Asignado Rechazar/Aceptar](screenshots/AceptarRechazarPedido.png)
+
+![Pedido Camino](screenshots/pedidoenCamino.png)
+### Info Base de datos
+![HistorialEstatusPedidos](screenshots/estatusPedido.png)
+
+
