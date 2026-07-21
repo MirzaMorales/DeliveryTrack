@@ -38,6 +38,7 @@ kotlin {
 }
 
 dependencies {
+    implementation(project(":shared"))
     implementation(libs.play.services.wearable)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     

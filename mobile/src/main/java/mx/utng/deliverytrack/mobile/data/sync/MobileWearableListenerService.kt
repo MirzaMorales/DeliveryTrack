@@ -1,4 +1,4 @@
-package mx.utng.deliverytrack.mobile
+package mx.utng.deliverytrack.mobile.data.sync
 
 import android.util.Log
 import com.google.android.gms.wearable.MessageEvent
@@ -15,7 +15,7 @@ class MobileWearableListenerService : WearableListenerService() {
 
     private val client = OkHttpClient()
     private val mediaTypeJson = "application/json; charset=utf-8".toMediaType()
-    private val backendUrl = "http://10.0.2.2:3000" // 10.0.2.2 is localhost on host machine from emulator
+    private val backendUrl = "http://10.0.2.2:3000"
 
     companion object {
         private const val TAG = "MobileWearableService"
@@ -58,7 +58,6 @@ class MobileWearableListenerService : WearableListenerService() {
                 val responseBody = response.body?.string() ?: ""
                 Log.d(TAG, "Backend response (Active Order): Code=${response.code}, Body=$responseBody")
                 
-                // Construct a response payload containing success status and body
                 val resultObj = JSONObject().apply {
                     put("success", response.isSuccessful)
                     put("code", response.code)

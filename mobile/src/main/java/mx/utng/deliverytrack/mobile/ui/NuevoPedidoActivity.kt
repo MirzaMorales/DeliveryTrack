@@ -1,4 +1,4 @@
-package mx.utng.deliverytrack.mobile
+package mx.utng.deliverytrack.mobile.ui
 
 import android.os.Bundle
 import android.os.Handler
@@ -21,11 +21,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import mx.utng.deliverytrack.mobile.data.models.Repartidor
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.concurrent.thread
-
-data class Repartidor(val id: Int, val nombre: String, val telefono: String)
 
 class NuevoPedidoActivity : ComponentActivity() {
 
@@ -74,7 +73,6 @@ fun NuevoPedidoScreen(
     val primaryBlue = Color(0xFF1A3A6B)
     val accentBlue = Color(0xFF2563EB)
 
-    // Cargar repartidores al iniciar
     LaunchedEffect(Unit) {
         thread {
             try {
@@ -96,7 +94,6 @@ fun NuevoPedidoScreen(
                             telefono = obj.getString("telefono")
                         )
                     }
-                    // Actualizar estado desde hilo secundario (Compose MutableState es thread-safe)
                     repartidores = list
                     if (list.isNotEmpty()) repartidorSeleccionado = list[0]
                     isLoadingRepartidores = false
@@ -116,7 +113,6 @@ fun NuevoPedidoScreen(
             .fillMaxSize()
             .background(Color(0xFFF5F7FA))
     ) {
-        // Header
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -138,7 +134,6 @@ fun NuevoPedidoScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // DATOS DEL CLIENTE
             Text(
                 "DATOS DEL CLIENTE",
                 fontWeight = FontWeight.Bold,
@@ -188,7 +183,6 @@ fun NuevoPedidoScreen(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // REPARTIDOR
             Text(
                 "REPARTIDOR SUGERIDO",
                 fontWeight = FontWeight.Bold,
@@ -262,7 +256,6 @@ fun NuevoPedidoScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // BOTÓN CREAR
             Button(
                 onClick = {
                     val rep = repartidorSeleccionado

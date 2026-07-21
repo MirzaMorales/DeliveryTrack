@@ -1,5 +1,6 @@
-package mx.utng.deliverytrack.mobile
+package mx.utng.deliverytrack.mobile.ui
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -24,7 +25,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.android.gms.wearable.Wearable
-import android.content.Intent
 
 class MainActivity : ComponentActivity() {
 
@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "Use this console to simulate real-time logistical alerts sent from backend / admin to the Wear OS client.",
+                        text = "Panel principal para repartidor y administrador de logística en tiempo real.",
                         fontSize = 14.sp,
                         color = Color.Gray,
                         textAlign = TextAlign.Center,
@@ -64,7 +64,6 @@ class MainActivity : ComponentActivity() {
 
                     Spacer(modifier = Modifier.height(32.dp))
 
-                    // Button 1: Simulate New Order
                     Button(
                         onClick = { simulateAlert("nuevo") },
                         modifier = Modifier.fillMaxWidth().height(50.dp),
@@ -78,7 +77,6 @@ class MainActivity : ComponentActivity() {
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Button 2: Simulate Cancellation
                     Button(
                         onClick = { simulateAlert("cancelado") },
                         modifier = Modifier.fillMaxWidth().height(50.dp),
