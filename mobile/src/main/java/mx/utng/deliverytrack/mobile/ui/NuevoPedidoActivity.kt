@@ -95,16 +95,24 @@ fun NuevoPedidoScreen(
                             telefono = obj.getString("telefono")
                         )
                     }
-                    repartidores = list
-                    if (list.isNotEmpty()) repartidorSeleccionado = list[0]
-                    isLoadingRepartidores = false
+                    mainHandler.post {
+                        repartidores = list
+                        if (list.isNotEmpty() && repartidorSeleccionado == null) {
+                            repartidorSeleccionado = list[0]
+                        }
+                        isLoadingRepartidores = false
+                    }
                 } else {
-                    errorRepartidores = "Error $code al cargar repartidores"
-                    isLoadingRepartidores = false
+                    mainHandler.post {
+                        errorRepartidores = "Error $code al cargar repartidores"
+                        isLoadingRepartidores = false
+                    }
                 }
             } catch (e: Exception) {
-                errorRepartidores = "Sin conexión: ${e.message}"
-                isLoadingRepartidores = false
+                mainHandler.post {
+                    errorRepartidores = "Sin conexión: ${e.message}"
+                    isLoadingRepartidores = false
+                }
             }
         }
     }
