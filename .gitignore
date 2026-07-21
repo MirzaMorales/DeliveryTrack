@@ -3,6 +3,10 @@
 local.properties
 .DS_Store
 
+# Environment & Secret files
+.env
+*.env
+
 # Build & generated directories
 build/
 **/build/
