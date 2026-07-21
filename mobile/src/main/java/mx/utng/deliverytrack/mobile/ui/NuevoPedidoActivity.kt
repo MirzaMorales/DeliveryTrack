@@ -73,6 +73,7 @@ fun NuevoPedidoScreen(
 
     val primaryBlue = Color(0xFF1A3A6B)
     val accentBlue = Color(0xFF2563EB)
+    val mainHandler = remember { Handler(Looper.getMainLooper()) }
 
     LaunchedEffect(Unit) {
         thread {
