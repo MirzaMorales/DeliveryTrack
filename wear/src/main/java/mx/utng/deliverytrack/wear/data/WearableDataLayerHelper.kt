@@ -1,4 +1,4 @@
-package mx.utng.deliverytrack.presentation
+package mx.utng.deliverytrack.wear.data
 
 import android.content.Context
 import android.util.Log

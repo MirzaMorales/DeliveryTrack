@@ -1,4 +1,4 @@
-package mx.utng.deliverytrack.presentation
+package mx.utng.deliverytrack.wear.presentation
 
 import android.content.Context
 import android.os.Build
@@ -8,14 +8,12 @@ import android.os.Vibrator
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,14 +38,14 @@ import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import androidx.wear.compose.ui.tooling.preview.WearPreviewFontScales
-import mx.utng.deliverytrack.presentation.theme.DeliveryTrackTheme
+import mx.utng.deliverytrack.wear.data.WearableDataLayerHelper
+import mx.utng.deliverytrack.wear.presentation.theme.DeliveryTrackTheme
 import org.json.JSONObject
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var dataLayerHelper: WearableDataLayerHelper
 
-    // Active order state data parsed from JSON
     private var activeOrderId by mutableStateOf<Int?>(null)
     private var clientName by mutableStateOf("")
     private var addressText by mutableStateOf("")
@@ -59,7 +57,7 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         private const val TAG = "WearMainActivity"
-        private const val REPARTIDOR_ID = 2 // Hardcoded repartidorId = 2
+        private const val REPARTIDOR_ID = 2
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -84,7 +82,6 @@ class MainActivity : ComponentActivity() {
                     orderStatus = newStatus
                     statusMessage = ""
 
-                    // If a new active order arrives and was not shown before, trigger vibration
                     if (oldStatus == null && newStatus == 2) {
                         triggerHapticAlert("nuevo")
                     }
@@ -102,7 +99,6 @@ class MainActivity : ComponentActivity() {
                     orderStatus = newStatus
                     statusMessage = ""
                     
-                    // If transitioned to delivered (6) or canceled (4), reset
                     if (newStatus == 6 || newStatus == 4) {
                         resetOrderState()
                         statusMessage = if (newStatus == 6) "¡Entrega completada!" else "Pedido cancelado"
@@ -115,12 +111,10 @@ class MainActivity : ComponentActivity() {
                 Log.d(TAG, "Haptic alert notification received: $type")
                 triggerHapticAlert(type)
                 
-                // If it was a cancellation alert, reset state and display message
                 if (type.lowercase() == "cancelado") {
                     resetOrderState()
                     statusMessage = "Pedido cancelado por admin"
                 } else if (type.lowercase() == "nuevo") {
-                    // Refetch active order to show the newly assigned one
                     refreshOrder()
                 }
             }
@@ -139,28 +133,28 @@ class MainActivity : ComponentActivity() {
                     val id = activeOrderId
                     if (id != null) {
                         isLoading = true
-                        dataLayerHelper.requestStatusUpdate(id, 1, REPARTIDOR_ID) // Accept = status 1
+                        dataLayerHelper.requestStatusUpdate(id, 1, REPARTIDOR_ID)
                     }
                 },
                 onReject = {
                     val id = activeOrderId
                     if (id != null) {
                         isLoading = true
-                        dataLayerHelper.requestStatusUpdate(id, 4, REPARTIDOR_ID) // Reject = status 4 (Cancelado)
+                        dataLayerHelper.requestStatusUpdate(id, 4, REPARTIDOR_ID)
                     }
                 },
                 onEnCamino = {
                     val id = activeOrderId
                     if (id != null) {
                         isLoading = true
-                        dataLayerHelper.requestStatusUpdate(id, 3, REPARTIDOR_ID) // En camino = status 3 (En ruta)
+                        dataLayerHelper.requestStatusUpdate(id, 3, REPARTIDOR_ID)
                     }
                 },
                 onEntregado = {
                     val id = activeOrderId
                     if (id != null) {
                         isLoading = true
-                        dataLayerHelper.requestStatusUpdate(id, 6, REPARTIDOR_ID) // Entregado = status 6
+                        dataLayerHelper.requestStatusUpdate(id, 6, REPARTIDOR_ID)
                     }
                 },
                 onManualRefresh = {
@@ -187,8 +181,8 @@ class MainActivity : ComponentActivity() {
     private fun triggerHapticAlert(type: String) {
         val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator ?: return
         val pattern = when (type.lowercase()) {
-            "nuevo" -> longArrayOf(0, 150, 100, 150) // double short vibration
-            "cancelado" -> longArrayOf(0, 300, 100, 100, 100, 100) // triple long warning
+            "nuevo" -> longArrayOf(0, 150, 100, 150)
+            "cancelado" -> longArrayOf(0, 300, 100, 100, 100, 100)
             else -> longArrayOf(0, 200)
         }
 
@@ -208,7 +202,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Auto-fetch active order on resume
         refreshOrder()
     }
 
@@ -241,7 +234,6 @@ fun WearApp(
             ScreenScaffold(scrollState = listState) { contentPadding ->
                 TransformingLazyColumn(contentPadding = contentPadding, state = listState) {
                     
-                    // Header
                     item {
                         ListHeader(
                             modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec),
@@ -256,7 +248,6 @@ fun WearApp(
                         }
                     }
 
-                    // Loading State
                     if (isLoading) {
                         item {
                             Text(
@@ -268,7 +259,6 @@ fun WearApp(
                         }
                     }
 
-                    // Status Messages (e.g. Success, Cancelled)
                     if (statusMessage.isNotEmpty()) {
                         item {
                             Text(
@@ -282,7 +272,6 @@ fun WearApp(
                     }
 
                     if (activeOrderId != null && orderStatus != null) {
-                        // Order ID and Description
                         item {
                             Text(
                                 text = "Pedido #${activeOrderId}",
@@ -293,7 +282,6 @@ fun WearApp(
                             )
                         }
 
-                        // Client Name
                         item {
                             Text(
                                 text = clientName,
@@ -308,24 +296,22 @@ fun WearApp(
                             )
                         }
 
-                        // Concatenated Address - Large and highly readable
                         item {
-                                Text(
-                                    text = "📍 $addressText",
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(
-                                            start = 8.dp,
-                                            end = 8.dp,
-                                            bottom = 10.dp  ),
-                                    textAlign = TextAlign.Center,
-                                    color = Color.White,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium,
-
-                                )
+                            Text(
+                                text = "📍 $addressText",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        start = 8.dp,
+                                        end = 8.dp,
+                                        bottom = 10.dp  ),
+                                textAlign = TextAlign.Center,
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
                         }
-                        // Description
+
                         if (orderDescription.isNotEmpty()) {
                             item {
                                 Text(
@@ -340,15 +326,13 @@ fun WearApp(
 
                         item { Spacer(modifier = Modifier.height(8.dp)) }
 
-                        // State-dependent sequential action buttons
                         item {
                             when (orderStatus) {
-                                2 -> { // Pendiente: Show Accept & Reject side-by-side
+                                2 -> {
                                     Row(
                                         modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
                                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {
-                                        // Reject (Red)
                                         Button(
                                             onClick = onReject,
                                             modifier = Modifier.weight(0.30f).height(36.dp),
@@ -359,7 +343,6 @@ fun WearApp(
                                         ) {
                                             Text("Rechazar", fontSize = 10.sp)
                                         }
-                                        // Accept (Green)
                                         Button(
                                             onClick = onAccept,
                                             modifier = Modifier.weight(0.30f).height(36.dp),
@@ -377,7 +360,7 @@ fun WearApp(
                                         }
                                     }
                                 }
-                                1 -> { // Aceptado: Show "En camino" (Blue)
+                                1 -> {
                                     Button(
                                         onClick = onEnCamino,
                                         modifier = Modifier.fillMaxWidth().height(36.dp).padding(horizontal = 20.dp),
@@ -393,7 +376,7 @@ fun WearApp(
                                         )
                                     }
                                 }
-                                3, 5 -> { // En ruta or Retrasado: Show "Entregado" (Orange)
+                                3, 5 -> {
                                     Button(
                                         onClick = onEntregado,
                                         modifier = Modifier.fillMaxWidth().height(36.dp).padding(horizontal = 20.dp),
@@ -411,7 +394,6 @@ fun WearApp(
                             }
                         }
                     } else if (!isLoading) {
-                        // Empty state: no active deliveries
                         item {
                             Text(
                                 text = "Sin entregas activas",
@@ -447,64 +429,4 @@ fun WearApp(
             }
         }
     }
-}
-
-@WearPreviewDevices
-@WearPreviewFontScales
-@Composable
-fun W1PreviewPending() {
-    WearApp(
-        activeOrderId = 104,
-        clientName = "Juan Pérez",
-        addressText = "Av. Juárez 123, Frente a Farmacia Guadalajara",
-        orderDescription = "Pizza Familiar Pepperoni + Soda 2L",
-        orderStatus = 2,
-        isLoading = false,
-        statusMessage = "",
-        onAccept = {},
-        onReject = {},
-        onEnCamino = {},
-        onEntregado = {},
-        onManualRefresh = {}
-    )
-}
-
-@WearPreviewDevices
-@WearPreviewFontScales
-@Composable
-fun W1PreviewAccepted() {
-    WearApp(
-        activeOrderId = 104,
-        clientName = "Juan Pérez",
-        addressText = "Av. Juárez 123, Frente a Farmacia Guadalajara",
-        orderDescription = "Pizza Familiar Pepperoni + Soda 2L",
-        orderStatus = 1,
-        isLoading = false,
-        statusMessage = "",
-        onAccept = {},
-        onReject = {},
-        onEnCamino = {},
-        onEntregado = {},
-        onManualRefresh = {}
-    )
-}
-
-@WearPreviewDevices
-@WearPreviewFontScales
-@Composable
-fun W1PreviewEmpty() {
-    WearApp(
-        activeOrderId = null,
-        clientName = "",
-        addressText = "",
-        orderDescription = "",
-        orderStatus = null,
-        isLoading = false,
-        statusMessage = "",
-        onAccept = {},
-        onReject = {},
-        onEnCamino = {},
-        onEntregado = {},
-        onManualRefresh = {}
-    )
 }

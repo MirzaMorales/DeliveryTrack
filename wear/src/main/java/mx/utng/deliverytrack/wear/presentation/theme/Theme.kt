@@ -1,4 +1,4 @@
-package mx.utng.deliverytrack.presentation.theme
+package mx.utng.deliverytrack.wear.presentation.theme
 
 import androidx.compose.runtime.Composable
 import androidx.wear.compose.material3.MaterialTheme
@@ -7,10 +7,6 @@ import androidx.wear.compose.material3.MaterialTheme
 fun DeliveryTrackTheme(
     content: @Composable () -> Unit
 ) {
-    /**
-     * Empty theme to customize for your app.
-     * See: https://developer.android.com/jetpack/compose/designsystems/custom
-     */
     MaterialTheme(
         content = content
     )
