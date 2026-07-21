@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "mx.utng.deliverytrack.mobile"
+    namespace = "mx.utng.deliverytrack.tv"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "mx.utng.deliverytrack"
+        applicationId = "mx.utng.deliverytrack.tv"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
@@ -19,15 +19,14 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
         }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+    buildFeatures {
+        compose = true
     }
 }
 
@@ -39,18 +38,11 @@ kotlin {
 
 dependencies {
     implementation(project(":shared"))
-    implementation(libs.play.services.wearable)
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    
-    // Core Android & Compose dependencies
     implementation(platform(libs.compose.bom))
     implementation(libs.activity.compose)
     implementation(libs.ui)
     implementation(libs.ui.graphics)
     implementation(libs.ui.tooling.preview)
-    
-    // Standard Phone/Tablet Compose libraries (resolved via BOM)
     implementation("androidx.compose.foundation:foundation")
-    implementation("androidx.compose.foundation:foundation-layout")
     implementation("androidx.compose.material3:material3")
 }

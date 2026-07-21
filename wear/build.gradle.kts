@@ -5,15 +5,20 @@ plugins {
 }
 
 android {
-    namespace = "mx.utng.deliverytrack.mobile"
-    compileSdk = 36
+    namespace = "mx.utng.deliverytrack.wear"
+    compileSdk {
+        version = release(36) {
+            minorApiLevel = 1
+        }
+    }
 
     defaultConfig {
         applicationId = "mx.utng.deliverytrack"
-        minSdk = 26
+        minSdk = 30
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+
     }
 
     buildTypes {
@@ -29,6 +34,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    useLibrary("wear-sdk")
+    buildFeatures {
+        compose = true
+    }
 }
 
 kotlin {
@@ -39,18 +48,19 @@ kotlin {
 
 dependencies {
     implementation(project(":shared"))
-    implementation(libs.play.services.wearable)
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    
-    // Core Android & Compose dependencies
     implementation(platform(libs.compose.bom))
     implementation(libs.activity.compose)
+    implementation(libs.compose.foundation)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.ui.tooling)
+    implementation(libs.core.splashscreen)
+    implementation(libs.play.services.wearable)
     implementation(libs.ui)
     implementation(libs.ui.graphics)
     implementation(libs.ui.tooling.preview)
-    
-    // Standard Phone/Tablet Compose libraries (resolved via BOM)
-    implementation("androidx.compose.foundation:foundation")
-    implementation("androidx.compose.foundation:foundation-layout")
-    implementation("androidx.compose.material3:material3")
+    implementation(libs.wear.tooling.preview)
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.ui.test.junit4)
+    debugImplementation(libs.ui.test.manifest)
+    debugImplementation(libs.ui.tooling)
 }

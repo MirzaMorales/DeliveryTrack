@@ -23,5 +23,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "DeliveryTrack"
-include(":app")
 include(":mobile")
+include(":wear")
+include(":shared")
+include(":tv")
