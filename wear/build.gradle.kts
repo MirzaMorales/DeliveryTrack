@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "mx.utng.deliverytrack"
+    namespace = "mx.utng.deliverytrack.wear"
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
