@@ -18,10 +18,16 @@ class MqttClientHelper(
     fun connect(onConnected: () -> Unit, onError: (Throwable) -> Unit) {
         try {
             mqttClient = MqttClient(serverUri, clientId, MemoryPersistence())
+            val user = username
+            val pass = password
             val options = MqttConnectOptions().apply {
                 isCleanSession = true
-                if (!username.isNullOrEmpty()) this.userName = username
-                if (!password.isNullOrEmpty()) this.password = password.toCharArray()
+                if (!user.isNullOrEmpty()) {
+                    userName = user
+                }
+                if (!pass.isNullOrEmpty()) {
+                    this.password = pass.toCharArray()
+                }
             }
             mqttClient?.connect(options)
             onConnected()
