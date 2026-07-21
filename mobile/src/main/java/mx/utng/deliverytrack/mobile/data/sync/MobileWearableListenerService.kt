@@ -4,6 +4,7 @@ import android.util.Log
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.WearableListenerService
+import mx.utng.deliverytrack.shared.config.ServerConfig
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -15,7 +16,7 @@ class MobileWearableListenerService : WearableListenerService() {
 
     private val client = OkHttpClient()
     private val mediaTypeJson = "application/json; charset=utf-8".toMediaType()
-    private val backendUrl = "http://10.0.2.2:3000"
+    private val backendUrl = ServerConfig.BASE_URL
 
     companion object {
         private const val TAG = "MobileWearableService"

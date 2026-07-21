@@ -22,13 +22,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import mx.utng.deliverytrack.mobile.data.models.Repartidor
+import mx.utng.deliverytrack.shared.config.ServerConfig
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.concurrent.thread
 
 class NuevoPedidoActivity : ComponentActivity() {
 
-    private val backendUrl = "http://10.0.2.2:3000"
+    private val backendUrl = ServerConfig.BASE_URL
     private val mainHandler = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {

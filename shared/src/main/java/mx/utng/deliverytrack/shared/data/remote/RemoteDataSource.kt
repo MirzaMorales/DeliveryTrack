@@ -1,10 +1,11 @@
 package mx.utng.deliverytrack.shared.data.remote
 
+import mx.utng.deliverytrack.shared.config.ServerConfig
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.IOException
 
-class RemoteDataSource(private val baseUrl: String = "http://10.0.2.2:3000") {
+class RemoteDataSource(private val baseUrl: String = ServerConfig.BASE_URL) {
     private val client = OkHttpClient()
 
     fun get(endpoint: String, callback: (Boolean, String?) -> Unit) {

@@ -24,9 +24,10 @@
         android:label="DeliveryTrack Mobile Hub"
         android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
+        android:testOnly="true"
         android:theme="@android:style/Theme.Material.Light" >
         <activity
-            android:name="mx.utng.deliverytrack.mobile.MainActivity"
+            android:name="mx.utng.deliverytrack.mobile.ui.MainActivity"
             android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -35,11 +36,11 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="mx.utng.deliverytrack.mobile.NuevoPedidoActivity"
+            android:name="mx.utng.deliverytrack.mobile.ui.NuevoPedidoActivity"
             android:exported="false" />
 
         <service
-            android:name="mx.utng.deliverytrack.mobile.MobileWearableListenerService"
+            android:name="mx.utng.deliverytrack.mobile.data.sync.MobileWearableListenerService"
             android:exported="true" >
             <intent-filter>
                 <action android:name="com.google.android.gms.wearable.BIND_LISTENER" />
