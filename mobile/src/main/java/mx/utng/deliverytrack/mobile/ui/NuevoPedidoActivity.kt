@@ -32,13 +32,20 @@ class NuevoPedidoActivity : ComponentActivity() {
     private val backendUrl = ServerConfig.BASE_URL
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    companion object {
+        const val EXTRA_EDIT_ORDER_ID = "extra_edit_order_id"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val editOrderId = intent.getIntExtra(EXTRA_EDIT_ORDER_ID, -1)
+
         setContent {
             MaterialTheme {
                 NuevoPedidoScreen(
                     backendUrl = backendUrl,
-                    onPedidoCreado = { finish() },
+                    editOrderId = if (editOrderId > 0) editOrderId else null,
+                    onPedidoGuardado = { finish() },
                     onShowToast = { msg ->
                         mainHandler.post {
                             Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
@@ -54,9 +61,12 @@ class NuevoPedidoActivity : ComponentActivity() {
 @Composable
 fun NuevoPedidoScreen(
     backendUrl: String,
-    onPedidoCreado: () -> Unit,
+    editOrderId: Int? = null,
+    onPedidoGuardado: () -> Unit,
     onShowToast: (String) -> Unit
 ) {
+    val isEditMode = (editOrderId != null)
+
     var nombreCliente by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
     var direccion by remember { mutableStateOf("") }
@@ -75,6 +85,7 @@ fun NuevoPedidoScreen(
     val accentBlue = Color(0xFF2563EB)
     val mainHandler = remember { Handler(Looper.getMainLooper()) }
 
+    // Fetch repartidores
     LaunchedEffect(Unit) {
         thread {
             try {
@@ -111,108 +122,146 @@ fun NuevoPedidoScreen(
                 }
             } catch (e: Exception) {
                 mainHandler.post {
-                    errorRepartidores = "Sin conexión: ${e.message}"
+                    errorRepartidores = "Error de red: ${e.message}"
                     isLoadingRepartidores = false
                 }
             }
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF5F7FA))
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(primaryBlue)
-                .padding(horizontal = 16.dp, vertical = 14.dp)
-        ) {
-            Text(
-                text = "← Nuevo Pedido",
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
+    // Fetch order details if in Edit mode
+    LaunchedEffect(editOrderId) {
+        if (editOrderId != null) {
+            thread {
+                try {
+                    val url = java.net.URL("$backendUrl/api/pedidos/$editOrderId")
+                    val conn = url.openConnection() as java.net.HttpURLConnection
+                    conn.requestMethod = "GET"
+                    conn.connectTimeout = 5000
+
+                    if (conn.responseCode == 200) {
+                        val text = conn.inputStream.bufferedReader().readText()
+                        val obj = JSONObject(text)
+                        mainHandler.post {
+                            nombreCliente = obj.optString("nombre_cliente", "")
+                            telefono = obj.optString("telefono", "")
+                            direccion = obj.optString("direccion", "")
+                            referencia = obj.optString("referencia_lugar", "")
+                            descripcion = obj.optString("descripcion_pedido", "")
+                            val repId = obj.optInt("id_repartidor", -1)
+                            if (repId > 0 && repartidores.isNotEmpty()) {
+                                repartidores.find { it.id == repId }?.let {
+                                    repartidorSeleccionado = it
+                                }
+                            }
+                        }
+                    }
+                } catch (_: Exception) {
+                }
+            }
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = if (isEditMode) "Editar Pedido #$editOrderId" else "Nuevo Pedido",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onPedidoGuardado) {
+                        Text("←", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = primaryBlue)
             )
         }
-
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(padding)
+                .background(Color(0xFFF8FAFC))
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                "DATOS DEL CLIENTE",
+                text = if (isEditMode) "INFORMACIÓN DEL PEDIDO A EDITAR" else "DATOS DEL CLIENTE Y ENTREGA",
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
-                color = Color.DarkGray
+                color = Color.Gray
             )
 
-            PedidoTextField(
+            // Nombre Cliente
+            OutlinedTextField(
                 value = nombreCliente,
                 onValueChange = { nombreCliente = it },
-                label = "Nombre del cliente",
-                placeholder = "Ej. Carlos Méndez"
+                label = { Text("Nombre del cliente *") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
             )
 
-            PedidoTextField(
+            // Teléfono
+            OutlinedTextField(
                 value = telefono,
                 onValueChange = { telefono = it },
-                label = "Teléfono",
-                placeholder = "Ej. 555-123-4567",
-                keyboardType = KeyboardType.Phone
+                label = { Text("Teléfono de contacto *") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
             )
 
-            PedidoTextField(
+            // Dirección
+            OutlinedTextField(
                 value = direccion,
                 onValueChange = { direccion = it },
-                label = "Dirección de entrega",
-                placeholder = "Calle, número, colonia"
+                label = { Text("Dirección de entrega *") },
+                modifier = Modifier.fillMaxWidth()
             )
 
-            PedidoTextField(
+            // Referencia
+            OutlinedTextField(
                 value = referencia,
                 onValueChange = { referencia = it },
-                label = "Referencias del lugar",
-                placeholder = "Ej. Casa azul, portón negro...",
-                singleLine = false,
+                label = { Text("Referencia del lugar") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // Descripción
+            OutlinedTextField(
+                value = descripcion,
+                onValueChange = { descripcion = it },
+                label = { Text("Descripción de los productos") },
+                modifier = Modifier.fillMaxWidth(),
                 minLines = 2
             )
 
-            PedidoTextField(
-                value = descripcion,
-                onValueChange = { descripcion = it },
-                label = "Descripción del pedido",
-                placeholder = "Artículos, cantidad, notas...",
-                singleLine = false,
-                minLines = 3
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
+            // Repartidor Selector
             Text(
-                "REPARTIDOR SUGERIDO",
+                text = "REPARTIDOR ASIGNADO",
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
-                color = Color.DarkGray
+                color = Color.Gray
             )
 
             when {
                 isLoadingRepartidores -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.CenterHorizontally),
-                        color = primaryBlue
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Cargando repartidores disponibles...")
+                    }
                 }
                 errorRepartidores.isNotEmpty() -> {
-                    Text(
-                        text = errorRepartidores,
-                        color = Color(0xFFD32F2F),
-                        fontSize = 13.sp
-                    )
+                    Text(errorRepartidores, color = Color.Red, fontSize = 13.sp)
+                }
+                repartidores.isEmpty() -> {
+                    Text("No hay repartidores activos disponibles.", color = Color.Red, fontSize = 13.sp)
                 }
                 else -> {
                     ExposedDropdownMenuBox(
@@ -223,19 +272,10 @@ fun NuevoPedidoScreen(
                             value = repartidorSeleccionado?.nombre ?: "Seleccionar repartidor",
                             onValueChange = {},
                             readOnly = true,
-                            trailingIcon = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded)
-                            },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded) },
                             modifier = Modifier
                                 .menuAnchor()
-                                .fillMaxWidth(),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = accentBlue,
-                                unfocusedBorderColor = Color(0xFFCBD5E1),
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White
-                            )
+                                .fillMaxWidth()
                         )
                         ExposedDropdownMenu(
                             expanded = dropdownExpanded,
@@ -243,16 +283,7 @@ fun NuevoPedidoScreen(
                         ) {
                             repartidores.forEach { rep ->
                                 DropdownMenuItem(
-                                    text = {
-                                        Column {
-                                            Text(rep.nombre, fontWeight = FontWeight.SemiBold)
-                                            Text(
-                                                rep.telefono,
-                                                fontSize = 12.sp,
-                                                color = Color.Gray
-                                            )
-                                        }
-                                    },
+                                    text = { Text("${rep.nombre} (${rep.telefono})") },
                                     onClick = {
                                         repartidorSeleccionado = rep
                                         dropdownExpanded = false
@@ -264,102 +295,72 @@ fun NuevoPedidoScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
+            // Save / Edit Submit Button
             Button(
                 onClick = {
-                    val rep = repartidorSeleccionado
-                    if (nombreCliente.isBlank() || telefono.isBlank() || direccion.isBlank() || rep == null) {
-                        onShowToast("Completa los campos obligatorios")
+                    if (nombreCliente.isBlank() || telefono.isBlank() || direccion.isBlank() || repartidorSeleccionado == null) {
+                        onShowToast("Completa los campos obligatorios y selecciona un repartidor")
                         return@Button
                     }
+
                     isLoading = true
+
                     thread {
                         try {
                             val body = JSONObject().apply {
-                                put("nombre_cliente", nombreCliente)
-                                put("telefono", telefono)
-                                put("direccion", direccion)
-                                put("referencia_lugar", referencia)
-                                put("descripcion_pedido", descripcion)
-                                put("id_repartidor", rep.id)
+                                put("nombre_cliente", nombreCliente.trim())
+                                put("telefono", telefono.trim())
+                                put("direccion", direccion.trim())
+                                put("referencia_lugar", referencia.trim())
+                                put("descripcion_pedido", descripcion.trim())
+                                put("id_repartidor", repartidorSeleccionado?.id)
                             }.toString()
 
-                            val url = java.net.URL("$backendUrl/api/pedidos")
+                            val urlString = if (isEditMode) "$backendUrl/api/pedidos/$editOrderId" else "$backendUrl/api/pedidos"
+                            val url = java.net.URL(urlString)
                             val conn = url.openConnection() as java.net.HttpURLConnection
-                            conn.requestMethod = "POST"
+                            conn.requestMethod = if (isEditMode) "PUT" else "POST"
                             conn.setRequestProperty("Content-Type", "application/json")
-                            conn.connectTimeout = 5000
-                            conn.readTimeout = 5000
+                            conn.connectTimeout = 6000
+                            conn.readTimeout = 6000
                             conn.doOutput = true
                             conn.outputStream.write(body.toByteArray(Charsets.UTF_8))
 
                             val code = conn.responseCode
                             isLoading = false
-                            if (code == 201) {
-                                onShowToast("¡Pedido creado exitosamente!")
-                                onPedidoCreado()
+
+                            if (code == 200 || code == 201) {
+                                onShowToast(if (isEditMode) "Pedido #$editOrderId actualizado exitosamente" else "Pedido creado exitosamente")
+                                mainHandler.post { onPedidoGuardado() }
                             } else {
-                                val err = conn.errorStream?.bufferedReader()?.readText()
-                                    ?: "Error desconocido"
-                                onShowToast("Error $code: $err")
+                                onShowToast("Error $code al guardar pedido")
                             }
                         } catch (e: Exception) {
                             isLoading = false
-                            onShowToast("Error de red: ${e.message}")
+                            onShowToast("Error de conexión: ${e.message}")
                         }
                     }
                 },
+                enabled = !isLoading && repartidorSeleccionado != null,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
-                enabled = !isLoading && !isLoadingRepartidores,
-                colors = ButtonDefaults.buttonColors(containerColor = primaryBlue),
-                shape = RoundedCornerShape(12.dp)
+                    .height(50.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = accentBlue),
+                shape = RoundedCornerShape(10.dp)
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp
-                    )
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Text("Crear Pedido", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = if (isEditMode) "Editar pedido" else "Guardar pedido",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
-    }
-}
-
-@Composable
-fun PedidoTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    placeholder: String,
-    keyboardType: KeyboardType = KeyboardType.Text,
-    singleLine: Boolean = true,
-    minLines: Int = 1
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(label, fontSize = 12.sp, color = Color.Gray)
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            placeholder = { Text(placeholder, color = Color(0xFFADB5BD)) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = singleLine,
-            minLines = minLines,
-            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-            shape = RoundedCornerShape(10.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color(0xFF2563EB),
-                unfocusedBorderColor = Color(0xFFCBD5E1),
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White
-            )
-        )
     }
 }

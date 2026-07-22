@@ -12,6 +12,7 @@ import mx.utng.deliverytrack.mobile.ui.admin.AdminDashboardScreen
 import mx.utng.deliverytrack.mobile.ui.admin.GestionUsuariosActivity
 import mx.utng.deliverytrack.mobile.ui.auth.LoginScreen
 import mx.utng.deliverytrack.mobile.ui.auth.UserSession
+import mx.utng.deliverytrack.mobile.ui.repartidor.DetallePedidoRepartidorActivity
 import mx.utng.deliverytrack.mobile.ui.repartidor.MisPedidosRepartidorScreen
 
 class MainActivity : ComponentActivity() {
@@ -48,7 +49,11 @@ class MainActivity : ComponentActivity() {
                     MisPedidosRepartidorScreen(
                         userSession = session,
                         onVerDetalleClick = { pedidoId ->
-                            // Open detail or navigate
+                            val intent = Intent(context, DetallePedidoRepartidorActivity::class.java).apply {
+                                putExtra(DetallePedidoRepartidorActivity.EXTRA_ORDER_ID, pedidoId)
+                                putExtra(DetallePedidoRepartidorActivity.EXTRA_COURIER_ID, session.idUser)
+                            }
+                            context.startActivity(intent)
                         },
                         onLogoutClick = {
                             activeSession = null

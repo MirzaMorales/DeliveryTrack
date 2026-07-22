@@ -1,6 +1,9 @@
 package mx.utng.deliverytrack.mobile.ui.admin
 
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,12 +13,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import mx.utng.deliverytrack.mobile.ui.auth.UserSession
 import mx.utng.deliverytrack.shared.config.ServerConfig
 import org.json.JSONArray
+import org.json.JSONObject
 import kotlin.concurrent.thread
 
 data class AdminPedidoItem(
@@ -34,13 +39,15 @@ fun AdminDashboardScreen(
     onGestionUsuariosClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
+    val context = LocalContext.current
     var pedidos by remember { mutableStateOf<List<AdminPedidoItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf("") }
 
     val primaryBlue = Color(0xFF1A3A6B)
 
-    LaunchedEffect(Unit) {
+    fun fetchAdminPedidos() {
+        isLoading = true
         thread {
             try {
                 val url = java.net.URL("${ServerConfig.BASE_URL}/api/pedidos/admin/activos")
@@ -71,6 +78,39 @@ fun AdminDashboardScreen(
                 isLoading = false
             }
         }
+    }
+
+    fun cancelarPedido(orderId: Int) {
+        thread {
+            try {
+                val body = JSONObject().apply {
+                    put("estatus", 4) // Cancelado
+                }.toString()
+
+                val url = java.net.URL("${ServerConfig.BASE_URL}/api/pedidos/$orderId")
+                val conn = url.openConnection() as java.net.HttpURLConnection
+                conn.requestMethod = "PUT"
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.connectTimeout = 5000
+                conn.doOutput = true
+                conn.outputStream.write(body.toByteArray(Charsets.UTF_8))
+
+                if (conn.responseCode == 200) {
+                    (context as? android.app.Activity)?.runOnUiThread {
+                        Toast.makeText(context, "Pedido #$orderId cancelado", Toast.LENGTH_SHORT).show()
+                    }
+                    fetchAdminPedidos()
+                }
+            } catch (e: Exception) {
+                (context as? android.app.Activity)?.runOnUiThread {
+                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        fetchAdminPedidos()
     }
 
     Scaffold(
@@ -130,7 +170,7 @@ fun AdminDashboardScreen(
                         modifier = Modifier.padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("📍 Mapa de repartidores en tiempo real activo", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        Text("📍 Mapa general de flotilla de repartidores activo", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }
                 }
 
@@ -164,7 +204,18 @@ fun AdminDashboardScreen(
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             items(pedidos) { item ->
-                                AdminPedidoRow(item)
+                                AdminPedidoRow(
+                                    item = item,
+                                    onPedidoClick = { orderId ->
+                                        val intent = Intent(context, AdminDetallePedidoActivity::class.java).apply {
+                                            putExtra(AdminDetallePedidoActivity.EXTRA_ORDER_ID, orderId)
+                                        }
+                                        context.startActivity(intent)
+                                    },
+                                    onCancelarClick = { orderId ->
+                                        cancelarPedido(orderId)
+                                    }
+                                )
                             }
                         }
                     }
@@ -175,7 +226,11 @@ fun AdminDashboardScreen(
 }
 
 @Composable
-fun AdminPedidoRow(item: AdminPedidoItem) {
+fun AdminPedidoRow(
+    item: AdminPedidoItem,
+    onPedidoClick: (Int) -> Unit,
+    onCancelarClick: (Int) -> Unit
+) {
     val (statusText, statusColor) = when (item.estatus) {
         1 -> "Aceptado" to Color(0xFF2563EB)
         2 -> "Pendiente" to Color(0xFFE65100)
@@ -187,7 +242,9 @@ fun AdminPedidoRow(item: AdminPedidoItem) {
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onPedidoClick(item.idPedido) },
         shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -205,17 +262,31 @@ fun AdminPedidoRow(item: AdminPedidoItem) {
                 Text(item.direccion, fontSize = 12.sp, color = Color.Gray)
             }
 
-            Surface(
-                color = statusColor.copy(alpha = 0.15f),
-                shape = RoundedCornerShape(12.dp)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Text(
-                    text = statusText,
-                    color = statusColor,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 11.sp,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                )
+                Surface(
+                    color = statusColor.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = statusText,
+                        color = statusColor,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+
+                if (item.estatus != 4 && item.estatus != 6) {
+                    TextButton(
+                        onClick = { onCancelarClick(item.idPedido) },
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                    ) {
+                        Text("Cancelar", color = Color(0xFFDC2626), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         }
     }

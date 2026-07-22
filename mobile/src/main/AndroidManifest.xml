@@ -24,6 +24,12 @@
         <activity
             android:name=".ui.admin.GestionUsuariosActivity"
             android:exported="false" />
+        <activity
+            android:name=".ui.admin.AdminDetallePedidoActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.repartidor.DetallePedidoRepartidorActivity"
+            android:exported="false" />
 
         <service
             android:name=".data.sync.MobileWearableListenerService"

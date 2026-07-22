@@ -396,6 +396,102 @@ app.delete('/api/usuarios/:id', async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/pedidos/:id
+ * Returns details of a specific order
+ */
+app.get('/api/pedidos/:id', async (req: Request, res: Response) => {
+  const orderId = parseInt(req.params.id, 10);
+  if (isNaN(orderId)) {
+    return res.status(400).json({ error: 'ID de pedido inválido' });
+  }
+
+  try {
+    const result = await query(
+      `SELECT p.id_pedido, p.nombre_cliente, p.telefono, p.direccion, p.referencia_lugar, p.descripcion_pedido, p.estatus, p.fecha, p.hora, p.id_repartidor,
+              u.nombre_completo AS repartidor_nombre, u.telefono AS repartidor_telefono
+       FROM pedido p
+       LEFT JOIN usuario u ON p.id_repartidor = u.id_user
+       WHERE p.id_pedido = $1`,
+      [orderId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Pedido no encontrado' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error: any) {
+    console.error('Error fetching order details:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
+
+/**
+ * PUT /api/pedidos/:id
+ * Updates an existing order's information (client name, phone, address, reference, description, courier)
+ */
+app.put('/api/pedidos/:id', async (req: Request, res: Response) => {
+  const orderId = parseInt(req.params.id, 10);
+  const { nombre_cliente, telefono, direccion, referencia_lugar, descripcion_pedido, id_repartidor, estatus } = req.body;
+
+  if (isNaN(orderId)) {
+    return res.status(400).json({ error: 'ID de pedido inválido' });
+  }
+
+  try {
+    let updateFields: string[] = [];
+    let params: any[] = [];
+    let paramIndex = 1;
+
+    if (nombre_cliente) {
+      updateFields.push(`nombre_cliente = $${paramIndex++}`);
+      params.push(nombre_cliente);
+    }
+    if (telefono) {
+      updateFields.push(`telefono = $${paramIndex++}`);
+      params.push(telefono.toString().trim());
+    }
+    if (direccion) {
+      updateFields.push(`direccion = $${paramIndex++}`);
+      params.push(direccion);
+    }
+    if (referencia_lugar !== undefined) {
+      updateFields.push(`referencia_lugar = $${paramIndex++}`);
+      params.push(referencia_lugar);
+    }
+    if (descripcion_pedido !== undefined) {
+      updateFields.push(`descripcion_pedido = $${paramIndex++}`);
+      params.push(descripcion_pedido);
+    }
+    if (id_repartidor) {
+      updateFields.push(`id_repartidor = $${paramIndex++}`);
+      params.push(parseInt(id_repartidor, 10));
+    }
+    if (estatus) {
+      updateFields.push(`estatus = $${paramIndex++}`);
+      params.push(parseInt(estatus, 10));
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ error: 'No hay campos para actualizar' });
+    }
+
+    params.push(orderId);
+    const queryStr = `UPDATE pedido SET ${updateFields.join(', ')} WHERE id_pedido = $${paramIndex} RETURNING *`;
+
+    const result = await query(queryStr, params);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Pedido no encontrado' });
+    }
+
+    res.json({ message: 'Pedido actualizado exitosamente', pedido: result.rows[0] });
+  } catch (error: any) {
+    console.error('Error updating order:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
+
+/**
  * POST /api/pedidos
  */
 app.post('/api/pedidos', async (req: Request, res: Response) => {
