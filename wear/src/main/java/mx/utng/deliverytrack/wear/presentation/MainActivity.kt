@@ -129,8 +129,8 @@ class MainActivity : ComponentActivity() {
                     if (courier == null) {
                         // 1. Wear Login Screen
                         WearLoginScreen(
-                            onCourierSelected = { item ->
-                                activeCourier = item
+                            onLoginSuccess = { session ->
+                                activeCourier = WearCourierItem(session.idUser, session.nombreCompleto, session.telefono)
                             }
                         )
                     } else if (order == null) {
