@@ -13,6 +13,7 @@ import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.*
 import mx.utng.deliverytrack.shared.config.ServerConfig
 import org.json.JSONArray
+import androidx.compose.foundation.shape.RoundedCornerShape
 import kotlin.concurrent.thread
 
 data class WearPedidoCardItem(
@@ -176,10 +177,20 @@ fun WearPedidosCardsScreen(
             item {
                 Button(
                     onClick = onChangeCourierClick,
-                    modifier = Modifier.fillMaxWidth().height(32.dp).padding(horizontal = 16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155))
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(28.dp)
+                        .padding(horizontal = 28.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0x33CBD5E1))
                 ) {
-                    Text("Cerrar sesión", fontSize = 9.sp, textAlign = TextAlign.Center)
+                    Text(
+                        text = "Cerrar sesión",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFFE2E8F0),
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }

@@ -266,10 +266,20 @@ fun WearOrderDetailScreen(
             item {
                 Button(
                     onClick = onBackToCardsList,
-                    modifier = Modifier.fillMaxWidth().height(30.dp).padding(horizontal = 20.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155))
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(28.dp)
+                        .padding(horizontal = 28.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0x33CBD5E1))
                 ) {
-                    Text("← Regresar", fontSize = 10.sp, textAlign = TextAlign.Center)
+                    Text(
+                        text = "← Regresar",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
 
