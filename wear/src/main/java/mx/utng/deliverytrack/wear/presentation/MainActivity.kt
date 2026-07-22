@@ -37,7 +37,7 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import mx.utng.deliverytrack.wear.data.WearableDataLayerHelper
-import mx.utng.deliverytrack.wear.presentation.auth.WearCourierItem
+import mx.utng.deliverytrack.wear.presentation.auth.WearCourierSession
 import mx.utng.deliverytrack.wear.presentation.auth.WearLoginScreen
 import mx.utng.deliverytrack.wear.presentation.pedidos.WearPedidoCardItem
 import mx.utng.deliverytrack.wear.presentation.pedidos.WearPedidosCardsScreen
@@ -48,7 +48,7 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var dataLayerHelper: WearableDataLayerHelper
 
-    private var activeCourier by mutableStateOf<WearCourierItem?>(null)
+    private var activeCourier by mutableStateOf<WearCourierSession?>(null)
     private var selectedPedido by mutableStateOf<WearPedidoCardItem?>(null)
 
     private var activeOrderId by mutableStateOf<Int?>(null)
@@ -130,7 +130,7 @@ class MainActivity : ComponentActivity() {
                         // 1. Wear Login Screen
                         WearLoginScreen(
                             onLoginSuccess = { session ->
-                                activeCourier = WearCourierItem(session.idUser, session.nombreCompleto, session.telefono)
+                                activeCourier = session
                             }
                         )
                     } else if (order == null) {

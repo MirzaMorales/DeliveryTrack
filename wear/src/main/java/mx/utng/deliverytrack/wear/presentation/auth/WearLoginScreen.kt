@@ -1,10 +1,10 @@
 package mx.utng.deliverytrack.wear.presentation.auth
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -26,7 +26,6 @@ data class WearCourierSession(
     val telefono: String
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WearLoginScreen(
     onLoginSuccess: (WearCourierSession) -> Unit
@@ -56,7 +55,7 @@ fun WearLoginScreen(
 
             item {
                 Text(
-                    text = "Acceso Repartidor",
+                    text = "Inicio de Sesión Repartidor",
                     fontSize = 10.sp,
                     color = Color.Gray,
                     textAlign = TextAlign.Center,
@@ -75,10 +74,16 @@ fun WearLoginScreen(
                     OutlinedTextField(
                         value = telefono,
                         onValueChange = { telefono = it },
-                        placeholder = { Text("Teléfono", fontSize = 10.sp, color = Color.Gray) },
+                        placeholder = { Text("Ej. 5551234567", fontSize = 10.sp, color = Color.Gray) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        maxLines = 1
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = Color.DarkGray,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        )
                     )
                 }
             }
@@ -97,8 +102,14 @@ fun WearLoginScreen(
                         placeholder = { Text("••••••••", fontSize = 10.sp, color = Color.Gray) },
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        maxLines = 1
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = Color.DarkGray,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        )
                     )
                 }
             }
@@ -164,7 +175,7 @@ fun WearLoginScreen(
                                     val rol = userObj.getInt("rol")
 
                                     if (rol != 2) {
-                                        errorMessage = "Acceso exclusivo para repartidores en el reloj"
+                                        errorMessage = "Acceso exclusivo para repartidores"
                                         return@thread
                                     }
 
@@ -176,7 +187,7 @@ fun WearLoginScreen(
                                     onLoginSuccess(session)
                                 } else {
                                     val errObj = try { JSONObject(responseText) } catch (e: Exception) { null }
-                                    errorMessage = errObj?.optString("error") ?: "Teléfono o contraseña incorrectos"
+                                    errorMessage = errObj?.optString("error") ?: "Credenciales incorrectas"
                                 }
                             } catch (e: Exception) {
                                 isLoading = false
@@ -189,7 +200,7 @@ fun WearLoginScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
                 ) {
                     if (isLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White)
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp))
                     } else {
                         Text("Iniciar sesión", fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                     }
