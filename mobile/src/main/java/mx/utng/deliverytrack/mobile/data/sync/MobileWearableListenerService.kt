@@ -10,13 +10,20 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import kotlin.concurrent.thread
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class MobileWearableListenerService : WearableListenerService() {
 
-    private val client = OkHttpClient()
+    private val executor = Executors.newCachedThreadPool()
+
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .readTimeout(5, TimeUnit.SECONDS)
+        .writeTimeout(5, TimeUnit.SECONDS)
+        .build()
+
     private val mediaTypeJson = "application/json; charset=utf-8".toMediaType()
-    private val backendUrl = ServerConfig.BASE_URL
 
     companion object {
         private const val TAG = "MobileWearableService"
@@ -30,19 +37,15 @@ class MobileWearableListenerService : WearableListenerService() {
 
         Log.d(TAG, "Message received from Wearable. Path: $path, Payload: $payload")
 
-        when (path) {
-            "/pedido/activo/get" -> {
-                thread {
-                    fetchActiveOrder(payload, sourceNodeId)
+        executor.execute {
+            try {
+                when (path) {
+                    "/pedido/activo/get" -> fetchActiveOrder(payload, sourceNodeId)
+                    "/pedido/status/update" -> updateOrderStatus(payload, sourceNodeId)
+                    else -> Log.w(TAG, "Unknown message path: $path")
                 }
-            }
-            "/pedido/status/update" -> {
-                thread {
-                    updateOrderStatus(payload, sourceNodeId)
-                }
-            }
-            else -> {
-                Log.w(TAG, "Unknown message path: $path")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error handling message on path: $path", e)
             }
         }
     }
@@ -50,7 +53,7 @@ class MobileWearableListenerService : WearableListenerService() {
     private fun fetchActiveOrder(repartidorId: String, clientNodeId: String) {
         Log.d(TAG, "Fetching active order for courier ID: $repartidorId")
         val request = Request.Builder()
-            .url("$backendUrl/api/pedidos/activo?repartidorId=$repartidorId")
+            .url("${ServerConfig.BASE_URL}/api/pedidos/activo?repartidorId=$repartidorId")
             .get()
             .build()
 
@@ -91,7 +94,7 @@ class MobileWearableListenerService : WearableListenerService() {
             }
 
             val request = Request.Builder()
-                .url("$backendUrl/api/pedidos/$orderId/estatus")
+                .url("${ServerConfig.BASE_URL}/api/pedidos/$orderId/estatus")
                 .patch(requestBodyJson.toString().toRequestBody(mediaTypeJson))
                 .build()
 
@@ -127,5 +130,10 @@ class MobileWearableListenerService : WearableListenerService() {
             .addOnFailureListener { e ->
                 Log.e(TAG, "Failed to send reply to path: $path", e)
             }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        executor.shutdown()
     }
 }

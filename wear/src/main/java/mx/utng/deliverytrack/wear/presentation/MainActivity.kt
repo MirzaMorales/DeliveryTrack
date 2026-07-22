@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,15 +37,20 @@ import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
-import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
-import androidx.wear.compose.ui.tooling.preview.WearPreviewFontScales
 import mx.utng.deliverytrack.wear.data.WearableDataLayerHelper
+import mx.utng.deliverytrack.wear.presentation.auth.WearCourierSession
+import mx.utng.deliverytrack.wear.presentation.auth.WearLoginScreen
+import mx.utng.deliverytrack.wear.presentation.pedidos.WearPedidoCardItem
+import mx.utng.deliverytrack.wear.presentation.pedidos.WearPedidosCardsScreen
 import mx.utng.deliverytrack.wear.presentation.theme.DeliveryTrackTheme
 import org.json.JSONObject
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var dataLayerHelper: WearableDataLayerHelper
+
+    private var activeCourier by mutableStateOf<WearCourierSession?>(null)
+    private var selectedPedido by mutableStateOf<WearPedidoCardItem?>(null)
 
     private var activeOrderId by mutableStateOf<Int?>(null)
     private var clientName by mutableStateOf("")
@@ -57,7 +63,6 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         private const val TAG = "WearMainActivity"
-        private const val REPARTIDOR_ID = 2
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,7 +105,6 @@ class MainActivity : ComponentActivity() {
                     statusMessage = ""
                     
                     if (newStatus == 6 || newStatus == 4) {
-                        resetOrderState()
                         statusMessage = if (newStatus == 6) "¡Entrega completada!" else "Pedido cancelado"
                     }
                 } else {
@@ -112,55 +116,95 @@ class MainActivity : ComponentActivity() {
                 triggerHapticAlert(type)
                 
                 if (type.lowercase() == "cancelado") {
-                    resetOrderState()
                     statusMessage = "Pedido cancelado por admin"
-                } else if (type.lowercase() == "nuevo") {
-                    refreshOrder()
                 }
             }
         )
 
         setContent {
-            WearApp(
-                activeOrderId = activeOrderId,
-                clientName = clientName,
-                addressText = addressText,
-                orderDescription = orderDescription,
-                orderStatus = orderStatus,
-                isLoading = isLoading,
-                statusMessage = statusMessage,
-                onAccept = {
-                    val id = activeOrderId
-                    if (id != null) {
-                        isLoading = true
-                        dataLayerHelper.requestStatusUpdate(id, 1, REPARTIDOR_ID)
+            DeliveryTrackTheme {
+                AppScaffold {
+                    val courier = activeCourier
+                    val order = selectedPedido
+
+                    if (courier == null) {
+                        // 1. Wear Login Screen
+                        WearLoginScreen(
+                            onLoginSuccess = { session ->
+                                activeCourier = session
+                            }
+                        )
+                    } else if (order == null) {
+                        // 2. Wear Order Cards List Screen
+                        WearPedidosCardsScreen(
+                            courierId = courier.idUser,
+                            courierName = courier.nombreCompleto,
+                            onPedidoCardClick = { cardItem ->
+                                selectedPedido = cardItem
+                                activeOrderId = cardItem.idPedido
+                                clientName = cardItem.nombreCliente
+                                addressText = cardItem.direccion
+                                orderDescription = cardItem.descripcion
+                                orderStatus = cardItem.estatus
+                            },
+                            onChangeCourierClick = {
+                                activeCourier = null
+                                selectedPedido = null
+                            }
+                        )
+                    } else {
+                        // 3. Wear Order Detail Screen + Back Button
+                        WearOrderDetailScreen(
+                            activeOrderId = activeOrderId,
+                            clientName = clientName,
+                            addressText = addressText,
+                            orderDescription = orderDescription,
+                            orderStatus = orderStatus,
+                            isLoading = isLoading,
+                            statusMessage = statusMessage,
+                            onBackToCardsList = {
+                                selectedPedido = null
+                            },
+                            onAccept = {
+                                val id = activeOrderId
+                                val repId = activeCourier?.idUser ?: 2
+                                if (id != null) {
+                                    isLoading = true
+                                    dataLayerHelper.requestStatusUpdate(id, 1, repId)
+                                    orderStatus = 1
+                                }
+                            },
+                            onReject = {
+                                val id = activeOrderId
+                                val repId = activeCourier?.idUser ?: 2
+                                if (id != null) {
+                                    isLoading = true
+                                    dataLayerHelper.requestStatusUpdate(id, 4, repId)
+                                    orderStatus = 4
+                                }
+                            },
+                            onEnCamino = {
+                                val id = activeOrderId
+                                val repId = activeCourier?.idUser ?: 2
+                                if (id != null) {
+                                    isLoading = true
+                                    dataLayerHelper.requestStatusUpdate(id, 3, repId)
+                                    orderStatus = 3
+                                }
+                            },
+                            onEntregado = {
+                                val id = activeOrderId
+                                val repId = activeCourier?.idUser ?: 2
+                                if (id != null) {
+                                    isLoading = true
+                                    dataLayerHelper.requestStatusUpdate(id, 6, repId)
+                                    orderStatus = 6
+                                }
+                            }
+                        )
                     }
-                },
-                onReject = {
-                    val id = activeOrderId
-                    if (id != null) {
-                        isLoading = true
-                        dataLayerHelper.requestStatusUpdate(id, 4, REPARTIDOR_ID)
-                    }
-                },
-                onEnCamino = {
-                    val id = activeOrderId
-                    if (id != null) {
-                        isLoading = true
-                        dataLayerHelper.requestStatusUpdate(id, 3, REPARTIDOR_ID)
-                    }
-                },
-                onEntregado = {
-                    val id = activeOrderId
-                    if (id != null) {
-                        isLoading = true
-                        dataLayerHelper.requestStatusUpdate(id, 6, REPARTIDOR_ID)
-                    }
-                },
-                onManualRefresh = {
-                    refreshOrder()
                 }
-            )
+            }
         }
     }
 
@@ -170,12 +214,6 @@ class MainActivity : ComponentActivity() {
         addressText = ""
         orderDescription = ""
         orderStatus = null
-    }
-
-    private fun refreshOrder() {
-        isLoading = true
-        statusMessage = "Buscando pedido..."
-        dataLayerHelper.requestActiveOrder(REPARTIDOR_ID)
     }
 
     private fun triggerHapticAlert(type: String) {
@@ -200,11 +238,6 @@ class MainActivity : ComponentActivity() {
         dataLayerHelper.registerListener()
     }
 
-    override fun onResume() {
-        super.onResume()
-        refreshOrder()
-    }
-
     override fun onStop() {
         super.onStop()
         dataLayerHelper.unregisterListener()
@@ -212,7 +245,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun WearApp(
+fun WearOrderDetailScreen(
     activeOrderId: Int?,
     clientName: String,
     addressText: String,
@@ -220,210 +253,159 @@ fun WearApp(
     orderStatus: Int?,
     isLoading: Boolean,
     statusMessage: String,
+    onBackToCardsList: () -> Unit,
     onAccept: () -> Unit,
     onReject: () -> Unit,
     onEnCamino: () -> Unit,
-    onEntregado: () -> Unit,
-    onManualRefresh: () -> Unit
+    onEntregado: () -> Unit
 ) {
-    DeliveryTrackTheme {
-        AppScaffold {
-            val listState = rememberTransformingLazyColumnState()
-            val transformationSpec = rememberTransformationSpec()
-            
-            ScreenScaffold(scrollState = listState) { contentPadding ->
-                TransformingLazyColumn(contentPadding = contentPadding, state = listState) {
-                    
-                    item {
-                        ListHeader(
-                            modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec),
-                            transformation = SurfaceTransformation(transformationSpec),
+    val listState = rememberTransformingLazyColumnState()
+    val transformationSpec = rememberTransformationSpec()
+
+    ScreenScaffold(scrollState = listState) { contentPadding ->
+        TransformingLazyColumn(contentPadding = contentPadding, state = listState) {
+            item {
+                Button(
+                    onClick = onBackToCardsList,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(28.dp)
+                        .padding(horizontal = 28.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0x33CBD5E1))
+                ) {
+                    Text(
+                        text = "← Regresar",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+            item {
+                ListHeader(
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec),
+                    transformation = SurfaceTransformation(transformationSpec),
+                ) {
+                    Text(
+                        text = "Pedido #${activeOrderId ?: ""}",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+
+            if (isLoading) {
+                item {
+                    Text(
+                        text = "Cargando...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)
+                    )
+                }
+            }
+
+            if (statusMessage.isNotEmpty()) {
+                item {
+                    Text(
+                        text = statusMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                    )
+                }
+            }
+
+            item {
+                Text(
+                    text = clientName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
+            }
+
+            item {
+                Text(
+                    text = "📍 $addressText",
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                    textAlign = TextAlign.Center,
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            if (orderDescription.isNotEmpty()) {
+                item {
+                    Text(
+                        text = orderDescription,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.LightGray,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(6.dp)) }
+
+            item {
+                when (orderStatus) {
+                    2 -> {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Text(
-                                text = "DeliveryTrack",
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontSize = 14.sp
-                            )
-                        }
-                    }
-
-                    if (isLoading) {
-                        item {
-                            Text(
-                                text = "Cargando...",
-                                style = MaterialTheme.typography.bodyMedium,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)
-                            )
-                        }
-                    }
-
-                    if (statusMessage.isNotEmpty()) {
-                        item {
-                            Text(
-                                text = statusMessage,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.secondary,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
-                            )
-                        }
-                    }
-
-                    if (activeOrderId != null && orderStatus != null) {
-                        item {
-                            Text(
-                                text = "Pedido #${activeOrderId}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.Gray,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-
-                        item {
-                            Text(
-                                text = clientName,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
-                                    .padding(
-                                    start = 8.dp,
-                                    end = 8.dp,
-                                    bottom = 10.dp  )
-                            )
-                        }
-
-                        item {
-                            Text(
-                                text = "📍 $addressText",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(
-                                        start = 8.dp,
-                                        end = 8.dp,
-                                        bottom = 10.dp  ),
-                                textAlign = TextAlign.Center,
-                                color = Color.White,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
-                            )
-                        }
-
-                        if (orderDescription.isNotEmpty()) {
-                            item {
-                                Text(
-                                    text = orderDescription,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color.LightGray,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
-
-                        item { Spacer(modifier = Modifier.height(8.dp)) }
-
-                        item {
-                            when (orderStatus) {
-                                2 -> {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        Button(
-                                            onClick = onReject,
-                                            modifier = Modifier.weight(0.30f).height(36.dp),
-                                            colors = ButtonDefaults.buttonColors(
-                                                containerColor = Color(0xFFD32F2F),
-                                                contentColor = Color.White
-                                            )
-                                        ) {
-                                            Text("Rechazar", fontSize = 10.sp)
-                                        }
-                                        Button(
-                                            onClick = onAccept,
-                                            modifier = Modifier.weight(0.30f).height(36.dp),
-                                            colors = ButtonDefaults.buttonColors(
-                                                containerColor = Color(0xFF388E3C),
-                                                contentColor = Color.White
-                                            )
-                                        ) {
-                                            Text(
-                                                text = "Aceptar",
-                                                fontSize = 10.sp,
-                                                textAlign = TextAlign.Center,
-                                                modifier = Modifier.fillMaxWidth()
-                                            )
-                                        }
-                                    }
-                                }
-                                1 -> {
-                                    Button(
-                                        onClick = onEnCamino,
-                                        modifier = Modifier.fillMaxWidth().height(36.dp).padding(horizontal = 20.dp),
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = Color(0xFF1976D2),
-                                            contentColor = Color.White
-                                        )
-                                    ) {
-                                        Text("En camino",
-                                            fontSize = 13.sp,
-                                            textAlign = TextAlign.Center,
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
-                                    }
-                                }
-                                3, 5 -> {
-                                    Button(
-                                        onClick = onEntregado,
-                                        modifier = Modifier.fillMaxWidth().height(36.dp).padding(horizontal = 20.dp),
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = Color(0xFFF57C00),
-                                            contentColor = Color.White
-                                        )
-                                    ) {
-                                        Text("Entregado",
-                                            fontSize = 13.sp,
-                                            textAlign = TextAlign.Center,
-                                            modifier = Modifier.fillMaxWidth())
-                                    }
-                                }
-                            }
-                        }
-                    } else if (!isLoading) {
-                        item {
-                            Text(
-                                text = "Sin entregas activas",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth().padding(top = 15.dp)
-                            )
-                        }
-                        item {
-                            Text(
-                                text = "Esperando asignaciones...",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.Gray,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth().padding(bottom = 15.dp)
-                            )
-                        }
-                        item {
                             Button(
-                                onClick = onManualRefresh,
-                                modifier = Modifier.fillMaxWidth().height(36.dp).padding(horizontal = 28.dp)
+                                onClick = onReject,
+                                modifier = Modifier.weight(0.30f).height(36.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
                             ) {
-                                Text("Buscar Pedidos",
-                                    fontSize = 10.sp,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.fillMaxWidth()
-                                    )
+                                Text("Rechazar", fontSize = 10.sp)
+                            }
+                            Button(
+                                onClick = onAccept,
+                                modifier = Modifier.weight(0.30f).height(36.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF388E3C))
+                            ) {
+                                Text("Aceptar", fontSize = 10.sp)
                             }
                         }
+                    }
+                    1 -> {
+                        Button(
+                            onClick = onEnCamino,
+                            modifier = Modifier.fillMaxWidth().height(36.dp).padding(horizontal = 16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2))
+                        ) {
+                            Text("En camino", fontSize = 12.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                        }
+                    }
+                    3, 5 -> {
+                        Button(
+                            onClick = onEntregado,
+                            modifier = Modifier.fillMaxWidth().height(36.dp).padding(horizontal = 16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF57C00))
+                        ) {
+                            Text("Entregado", fontSize = 12.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                        }
+                    }
+                    6 -> {
+                        Text(
+                            text = "✓ ¡Entrega completada!",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF22C55E),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                        )
                     }
                 }
             }
