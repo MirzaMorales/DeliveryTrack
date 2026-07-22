@@ -10,6 +10,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -203,7 +207,11 @@ fun AdminDetallePedidoScreen(
                         ) {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("🗺️ UBICACIÓN INDIVIDUAL DE REPARTIDOR", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("UBICACIÓN INDIVIDUAL DE REPARTIDOR", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    }
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text("Rastreo GPS de ${item.repartidorNombre} en mapa interactivo", color = Color(0xFF94A3B8), fontSize = 11.sp)
                                 }
@@ -252,7 +260,9 @@ fun AdminDetallePedidoScreen(
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
                                 shape = RoundedCornerShape(10.dp)
                             ) {
-                                Text("✏️ Editar pedido", fontWeight = FontWeight.Bold, color = Color.White)
+                                Icon(Icons.Default.Edit, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Editar pedido", fontWeight = FontWeight.Bold, color = Color.White)
                             }
 
                             if (item.estatus != 4 && item.estatus != 6) {
@@ -295,7 +305,9 @@ fun AdminDetallePedidoScreen(
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
                                     shape = RoundedCornerShape(10.dp)
                                 ) {
-                                    Text("🚫 Cancelar pedido", fontWeight = FontWeight.Bold, color = Color.White)
+                                    Icon(Icons.Default.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Cancelar pedido", fontWeight = FontWeight.Bold, color = Color.White)
                                 }
                             }
                         }

@@ -8,15 +8,24 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import mx.utng.deliverytrack.mobile.ui.auth.UserSession
 import mx.utng.deliverytrack.shared.config.ServerConfig
 import org.json.JSONArray
@@ -40,6 +49,8 @@ fun AdminDashboardScreen(
     onLogoutClick: () -> Unit
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
     var pedidos by remember { mutableStateOf<List<AdminPedidoItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf("") }
@@ -109,8 +120,17 @@ fun AdminDashboardScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        fetchAdminPedidos()
+    // Auto-refresh when screen becomes active/resumed
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                fetchAdminPedidos()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     Scaffold(
@@ -125,7 +145,9 @@ fun AdminDashboardScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                     ) {
-                        Text("+ Nuevo", fontWeight = FontWeight.Bold, color = Color.White)
+                        Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Nuevo", fontWeight = FontWeight.Bold, color = Color.White)
                     }
                     Spacer(modifier = Modifier.width(4.dp))
                     TextButton(onClick = onLogoutClick) {
@@ -141,13 +163,13 @@ fun AdminDashboardScreen(
                     selected = true,
                     onClick = {},
                     label = { Text("Pedidos") },
-                    icon = { Text("📋") }
+                    icon = { Icon(Icons.Default.Assignment, contentDescription = "Pedidos") }
                 )
                 NavigationBarItem(
                     selected = false,
                     onClick = onGestionUsuariosClick,
                     label = { Text("Usuarios") },
-                    icon = { Text("👥") }
+                    icon = { Icon(Icons.Default.People, contentDescription = "Usuarios") }
                 )
             }
         }
@@ -170,7 +192,9 @@ fun AdminDashboardScreen(
                         modifier = Modifier.padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("📍 Mapa general de flotilla de repartidores activo", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF1E293B), modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Mapa general de flotilla de repartidores activo", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }
                 }
 
@@ -280,11 +304,11 @@ fun AdminPedidoRow(
                 }
 
                 if (item.estatus != 4 && item.estatus != 6) {
-                    TextButton(
+                    IconButton(
                         onClick = { onCancelarClick(item.idPedido) },
-                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                        modifier = Modifier.size(32.dp)
                     ) {
-                        Text("Cancelar", color = Color(0xFFDC2626), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Icon(Icons.Default.Close, contentDescription = "Cancelar pedido", tint = Color(0xFFDC2626))
                     }
                 }
             }

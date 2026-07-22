@@ -11,9 +11,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import mx.utng.deliverytrack.mobile.ui.auth.UserSession
 import mx.utng.deliverytrack.shared.config.ServerConfig
 import org.json.JSONArray
@@ -33,13 +36,15 @@ fun MisPedidosRepartidorScreen(
     onVerDetalleClick: (Int) -> Unit,
     onLogoutClick: () -> Unit
 ) {
+    val lifecycleOwner = LocalLifecycleOwner.current
     var pedidos by remember { mutableStateOf<List<PedidoCard>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf("") }
 
     val primaryBlue = Color(0xFF1A3A6B)
 
-    LaunchedEffect(Unit) {
+    fun fetchRepartidorPedidos() {
+        isLoading = true
         thread {
             try {
                 val url = java.net.URL("${ServerConfig.BASE_URL}/api/pedidos/repartidor/${userSession.idUser}")
@@ -68,6 +73,19 @@ fun MisPedidosRepartidorScreen(
             } finally {
                 isLoading = false
             }
+        }
+    }
+
+    // Auto-refresh when screen becomes active/resumed
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                fetchRepartidorPedidos()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 

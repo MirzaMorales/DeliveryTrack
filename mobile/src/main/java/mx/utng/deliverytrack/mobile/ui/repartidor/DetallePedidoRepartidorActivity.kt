@@ -9,6 +9,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -249,7 +253,11 @@ fun DetallePedidoRepartidorScreen(
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         modifier = Modifier.padding(12.dp)
                                     ) {
-                                        Text("🧭 RUTA RÁPIDA GPS EN NAVEGACIÓN", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.Navigation, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(18.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("RUTA RÁPIDA GPS EN NAVEGACIÓN", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                        }
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text("Origen (Repartidor) ➔ Destino (${item.direccion})", color = Color(0xFF38BDF8), fontSize = 11.sp, textAlign = TextAlign.Center)
                                         Spacer(modifier = Modifier.height(8.dp))
@@ -319,7 +327,9 @@ fun DetallePedidoRepartidorScreen(
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
                                     shape = RoundedCornerShape(10.dp)
                                 ) {
-                                    Text("🛵 En camino", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                                    Icon(Icons.Default.DirectionsCar, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("En camino", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
                                 }
                             }
                             3, 5 -> { // En camino / Retrasado -> Entregado
@@ -330,7 +340,9 @@ fun DetallePedidoRepartidorScreen(
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
                                     shape = RoundedCornerShape(10.dp)
                                 ) {
-                                    Text("✓ Marcar como Entregado", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Marcar como Entregado", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
                                 }
                             }
                             6 -> { // Entregado
@@ -339,14 +351,22 @@ fun DetallePedidoRepartidorScreen(
                                     shape = RoundedCornerShape(10.dp),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text(
-                                        text = "✓ ¡Entrega completada exitosamente!",
-                                        color = Color(0xFF15803D),
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp,
-                                        textAlign = TextAlign.Center,
-                                        modifier = Modifier.padding(14.dp)
-                                    )
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(14.dp),
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF15803D), modifier = Modifier.size(20.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "¡Entrega completada exitosamente!",
+                                            color = Color(0xFF15803D),
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp
+                                        )
+                                    }
                                 }
                             }
                         }
