@@ -21,6 +21,9 @@
         <activity
             android:name=".ui.NuevoPedidoActivity"
             android:exported="false" />
+        <activity
+            android:name=".ui.admin.GestionUsuariosActivity"
+            android:exported="false" />
 
         <service
             android:name=".data.sync.MobileWearableListenerService"
