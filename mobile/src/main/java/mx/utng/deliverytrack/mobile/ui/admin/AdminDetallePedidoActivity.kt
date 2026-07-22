@@ -20,9 +20,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import mx.utng.deliverytrack.mobile.ui.NuevoPedidoActivity
 import mx.utng.deliverytrack.shared.config.ServerConfig
 import org.json.JSONObject
@@ -68,6 +71,8 @@ fun AdminDetallePedidoScreen(
     onBackClick: () -> Unit
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
     var orderDetail by remember { mutableStateOf<AdminOrderDetail?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf("") }
@@ -109,8 +114,17 @@ fun AdminDetallePedidoScreen(
         }
     }
 
-    LaunchedEffect(orderId) {
-        fetchDetails()
+    // Auto-refresh order details whenever the screen resumes (e.g., returning from editing)
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                fetchDetails()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     Scaffold(

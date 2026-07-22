@@ -19,10 +19,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import mx.utng.deliverytrack.shared.config.ServerConfig
 import org.json.JSONObject
 import kotlin.concurrent.thread
@@ -70,6 +73,8 @@ fun DetallePedidoRepartidorScreen(
     onBackClick: () -> Unit
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
     var orderDetail by remember { mutableStateOf<RepartidorOrderDetail?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var isUpdatingStatus by remember { mutableStateOf(false) }
@@ -154,8 +159,17 @@ fun DetallePedidoRepartidorScreen(
         }
     }
 
-    LaunchedEffect(orderId) {
-        fetchDetails()
+    // Auto-refresh order details on screen resume
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                fetchDetails()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     Scaffold(
@@ -195,7 +209,7 @@ fun DetallePedidoRepartidorScreen(
                     val (statusText, statusColor) = when (item.estatus) {
                         1 -> "Aceptado" to Color(0xFF2563EB)
                         2 -> "Pendiente" to Color(0xFFE65100)
-                        3 -> "En ruta" to Color(0xFF16A34A)
+                        3 -> "En camino" to Color(0xFF16A34A)
                         4 -> "Cancelado" to Color(0xFFDC2626)
                         5 -> "Retrasado" to Color(0xFFD97706)
                         6 -> "Entregado" to Color(0xFF15803D)
