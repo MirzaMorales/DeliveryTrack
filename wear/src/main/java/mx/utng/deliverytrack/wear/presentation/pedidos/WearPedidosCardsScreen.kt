@@ -34,25 +34,6 @@ fun WearPedidosCardsScreen(
     var isLoading by remember { mutableStateOf(true) }
     var reloadTrigger by remember { mutableIntStateOf(0) }
 
-    val defaultPedidos = remember(courierId) {
-        listOf(
-            WearPedidoCardItem(
-                idPedido = 1,
-                nombreCliente = "Cliente Ejemplo 1",
-                direccion = "Av. Principal #123, Col. Centro",
-                descripcion = "Entrega urgente de paquete #1",
-                estatus = 2 // Pendiente
-            ),
-            WearPedidoCardItem(
-                idPedido = 2,
-                nombreCliente = "Cliente Ejemplo 2",
-                direccion = "Calle Hidalgo #45, Col. Norte",
-                descripcion = "Entrega de documento confidencial",
-                estatus = 1 // Aceptado
-            )
-        )
-    }
-
     LaunchedEffect(courierId, reloadTrigger) {
         isLoading = true
         thread {
@@ -60,8 +41,8 @@ fun WearPedidosCardsScreen(
                 val url = java.net.URL("${ServerConfig.BASE_URL}/api/pedidos/repartidor/$courierId")
                 val conn = url.openConnection() as java.net.HttpURLConnection
                 conn.requestMethod = "GET"
-                conn.connectTimeout = 4000
-                conn.readTimeout = 4000
+                conn.connectTimeout = 5000
+                conn.readTimeout = 5000
 
                 if (conn.responseCode == 200) {
                     val text = conn.inputStream.bufferedReader().readText()
@@ -76,16 +57,12 @@ fun WearPedidosCardsScreen(
                             estatus = obj.getInt("estatus")
                         )
                     }
-                    if (list.isNotEmpty()) {
-                        pedidos = list
-                    } else {
-                        pedidos = defaultPedidos
-                    }
+                    pedidos = list
                 } else {
-                    pedidos = defaultPedidos
+                    pedidos = emptyList()
                 }
             } catch (_: Exception) {
-                pedidos = defaultPedidos
+                pedidos = emptyList()
             } finally {
                 isLoading = false
             }
@@ -107,7 +84,7 @@ fun WearPedidosCardsScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
                         Text(
-                            text = "Mis Pedidos (${pedidos.size})",
+                            text = "Mis Entregas (${pedidos.size})",
                             fontSize = 10.sp,
                             color = Color.Gray,
                             textAlign = TextAlign.Center,
@@ -120,7 +97,7 @@ fun WearPedidosCardsScreen(
             if (isLoading) {
                 item {
                     Text(
-                        text = "Buscando pedidos...",
+                        text = "Buscando entregas...",
                         fontSize = 11.sp,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
@@ -128,13 +105,27 @@ fun WearPedidosCardsScreen(
                 }
             } else if (pedidos.isEmpty()) {
                 item {
-                    Text(
-                        text = "Sin pedidos asignados",
-                        fontSize = 11.sp,
-                        color = Color.Gray,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp, vertical = 12.dp),
+                        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Sin entregas activas...",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "esperando asignaciones...",
+                            fontSize = 10.sp,
+                            color = Color(0xFF94A3B8),
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             } else {
                 items(pedidos.size) { index ->
@@ -188,7 +179,7 @@ fun WearPedidosCardsScreen(
                     modifier = Modifier.fillMaxWidth().height(32.dp).padding(horizontal = 16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155))
                 ) {
-                    Text("Cambiar perfil", fontSize = 9.sp, textAlign = TextAlign.Center)
+                    Text("Cerrar sesión", fontSize = 9.sp, textAlign = TextAlign.Center)
                 }
             }
         }

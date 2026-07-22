@@ -386,6 +386,16 @@ fun WearOrderDetailScreen(
                             Text("Entregado", fontSize = 12.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                         }
                     }
+                    6 -> {
+                        Text(
+                            text = "✓ ¡Entrega completada!",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF22C55E),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                        )
+                    }
                 }
             }
         }
