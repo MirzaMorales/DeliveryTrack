@@ -11,8 +11,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.DirectionsCar
-import androidx.compose.material.icons.filled.Navigation
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -195,7 +195,7 @@ fun DetallePedidoRepartidorScreen(
                     val (statusText, statusColor) = when (item.estatus) {
                         1 -> "Aceptado" to Color(0xFF2563EB)
                         2 -> "Pendiente" to Color(0xFFE65100)
-                        3 -> "En camino" to Color(0xFF16A34A)
+                        3 -> "En ruta" to Color(0xFF16A34A)
                         4 -> "Cancelado" to Color(0xFFDC2626)
                         5 -> "Retrasado" to Color(0xFFD97706)
                         6 -> "Entregado" to Color(0xFF15803D)
@@ -254,14 +254,14 @@ fun DetallePedidoRepartidorScreen(
                                         modifier = Modifier.padding(12.dp)
                                     ) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(Icons.Default.Navigation, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(18.dp))
+                                            Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(18.dp))
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Text("RUTA RÁPIDA GPS EN NAVEGACIÓN", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                         }
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text("Origen (Repartidor) ➔ Destino (${item.direccion})", color = Color(0xFF38BDF8), fontSize = 11.sp, textAlign = TextAlign.Center)
                                         Spacer(modifier = Modifier.height(8.dp))
-                                        Text("⏱️ ETA Estimado: 8 mins • 2.4 km", color = Color(0xFF94A3B8), fontSize = 11.sp)
+                                        Text("ETA Estimado: 8 mins • 2.4 km", color = Color(0xFF94A3B8), fontSize = 11.sp)
                                     }
                                 }
                             }
@@ -327,7 +327,7 @@ fun DetallePedidoRepartidorScreen(
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
                                     shape = RoundedCornerShape(10.dp)
                                 ) {
-                                    Icon(Icons.Default.DirectionsCar, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                                    Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text("En camino", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
                                 }
