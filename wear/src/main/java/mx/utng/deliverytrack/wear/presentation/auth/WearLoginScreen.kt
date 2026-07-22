@@ -1,6 +1,8 @@
 package mx.utng.deliverytrack.wear.presentation.auth
 
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -28,14 +30,26 @@ fun WearLoginScreen(
 ) {
     var couriers by remember { mutableStateOf<List<WearCourierItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    var hasError by remember { mutableStateOf(false) }
+    var reloadTrigger by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(Unit) {
+    val defaultCouriers = remember {
+        listOf(
+            WearCourierItem(1, "Juan Pérez", "4771234567"),
+            WearCourierItem(2, "Carlos Repartidor", "5551234567")
+        )
+    }
+
+    LaunchedEffect(reloadTrigger) {
+        isLoading = true
+        hasError = false
         thread {
             try {
                 val url = java.net.URL("${ServerConfig.BASE_URL}/api/usuarios/repartidores")
                 val conn = url.openConnection() as java.net.HttpURLConnection
                 conn.requestMethod = "GET"
-                conn.connectTimeout = 5000
+                conn.connectTimeout = 4000
+                conn.readTimeout = 4000
 
                 if (conn.responseCode == 200) {
                     val text = conn.inputStream.bufferedReader().readText()
@@ -48,9 +62,18 @@ fun WearLoginScreen(
                             telefono = obj.getString("telefono")
                         )
                     }
-                    couriers = list
+                    if (list.isNotEmpty()) {
+                        couriers = list
+                    } else {
+                        couriers = defaultCouriers
+                    }
+                } else {
+                    hasError = true
+                    couriers = defaultCouriers
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                hasError = true
+                couriers = defaultCouriers
             } finally {
                 isLoading = false
             }
@@ -66,7 +89,9 @@ fun WearLoginScreen(
                         text = "Iniciar Sesión Reloj",
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
-                        fontSize = 13.sp
+                        fontSize = 13.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
@@ -80,22 +105,12 @@ fun WearLoginScreen(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                     )
                 }
-            } else if (couriers.isEmpty()) {
-                item {
-                    Text(
-                        text = "Sin repartidores activos",
-                        fontSize = 11.sp,
-                        color = Color.Gray,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-                    )
-                }
             } else {
                 item {
                     Text(
-                        text = "Selecciona tu perfil:",
+                        text = if (hasError) "Perfiles (modo offline):" else "Selecciona tu perfil:",
                         fontSize = 11.sp,
-                        color = Color.Gray,
+                        color = if (hasError) Color(0xFFEAB308) else Color.Gray,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -114,6 +129,21 @@ fun WearLoginScreen(
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth()
                         )
+                    }
+                }
+
+                if (hasError) {
+                    item {
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                    item {
+                        Button(
+                            onClick = { reloadTrigger++ },
+                            modifier = Modifier.fillMaxWidth().height(30.dp).padding(horizontal = 16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
+                        ) {
+                            Text("🔄 Reintentar conexión", fontSize = 9.sp, textAlign = TextAlign.Center)
+                        }
                     }
                 }
             }

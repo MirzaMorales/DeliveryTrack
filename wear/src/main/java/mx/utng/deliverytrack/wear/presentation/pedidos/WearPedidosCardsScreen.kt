@@ -32,14 +32,36 @@ fun WearPedidosCardsScreen(
 ) {
     var pedidos by remember { mutableStateOf<List<WearPedidoCardItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    var reloadTrigger by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(courierId) {
+    val defaultPedidos = remember(courierId) {
+        listOf(
+            WearPedidoCardItem(
+                idPedido = 1,
+                nombreCliente = "Cliente Ejemplo 1",
+                direccion = "Av. Principal #123, Col. Centro",
+                descripcion = "Entrega urgente de paquete #1",
+                estatus = 2 // Pendiente
+            ),
+            WearPedidoCardItem(
+                idPedido = 2,
+                nombreCliente = "Cliente Ejemplo 2",
+                direccion = "Calle Hidalgo #45, Col. Norte",
+                descripcion = "Entrega de documento confidencial",
+                estatus = 1 // Aceptado
+            )
+        )
+    }
+
+    LaunchedEffect(courierId, reloadTrigger) {
+        isLoading = true
         thread {
             try {
                 val url = java.net.URL("${ServerConfig.BASE_URL}/api/pedidos/repartidor/$courierId")
                 val conn = url.openConnection() as java.net.HttpURLConnection
                 conn.requestMethod = "GET"
-                conn.connectTimeout = 5000
+                conn.connectTimeout = 4000
+                conn.readTimeout = 4000
 
                 if (conn.responseCode == 200) {
                     val text = conn.inputStream.bufferedReader().readText()
@@ -54,9 +76,16 @@ fun WearPedidosCardsScreen(
                             estatus = obj.getInt("estatus")
                         )
                     }
-                    pedidos = list
+                    if (list.isNotEmpty()) {
+                        pedidos = list
+                    } else {
+                        pedidos = defaultPedidos
+                    }
+                } else {
+                    pedidos = defaultPedidos
                 }
             } catch (_: Exception) {
+                pedidos = defaultPedidos
             } finally {
                 isLoading = false
             }
