@@ -58,7 +58,7 @@ fun WearPedidosCardsScreen(
                             estatus = obj.getInt("estatus")
                         )
                     }
-                    pedidos = list
+                    pedidos = list.filter { it.estatus != 6 && it.estatus != 4 }
                 } else {
                     pedidos = emptyList()
                 }
