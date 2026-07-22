@@ -243,6 +243,7 @@ app.get('/api/usuarios', async (req: Request, res: Response) => {
     const result = await query(
       `SELECT id_user, nombre_completo, telefono, rol, estatus 
        FROM usuario 
+       WHERE estatus != 3
        ORDER BY id_user ASC`,
       []
     );
@@ -374,6 +375,7 @@ app.put('/api/usuarios/:id', async (req: Request, res: Response) => {
 
 /**
  * DELETE /api/usuarios/:id
+ * Logical deletion: updates estatus = 3 (Suspensión)
  */
 app.delete('/api/usuarios/:id', async (req: Request, res: Response) => {
   const userId = parseInt(req.params.id, 10);
@@ -382,11 +384,11 @@ app.delete('/api/usuarios/:id', async (req: Request, res: Response) => {
   }
 
   try {
-    const result = await query('DELETE FROM usuario WHERE id_user = $1 RETURNING id_user', [userId]);
+    const result = await query('UPDATE usuario SET estatus = 3 WHERE id_user = $1 RETURNING id_user, estatus', [userId]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
-    res.json({ message: 'Usuario eliminado exitosamente' });
+    res.json({ message: 'Usuario suspendido / eliminado lógicamente exitosamente', usuario: result.rows[0] });
   } catch (error: any) {
     console.error('Error deleting user:', error);
     res.status(500).json({ error: 'Internal server error', details: error.message });

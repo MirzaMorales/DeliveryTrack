@@ -11,11 +11,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -48,10 +52,14 @@ class GestionUsuariosActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GestionUsuariosScreen(onBackClick: () -> Unit) {
+    val context = LocalContext.current
     var usuarios by remember { mutableStateOf<List<UserItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf("") }
-    var showDialogNuevo by remember { mutableStateOf(false) }
+    
+    var showDialogUser by remember { mutableStateOf(false) }
+    var userToEdit by remember { mutableStateOf<UserItem?>(null) }
+    var userToDelete by remember { mutableStateOf<UserItem?>(null) }
 
     val primaryBlue = Color(0xFF1A3A6B)
 
@@ -88,6 +96,28 @@ fun GestionUsuariosScreen(onBackClick: () -> Unit) {
         }
     }
 
+    fun deleteUsuarioLogico(user: UserItem) {
+        thread {
+            try {
+                val url = java.net.URL("${ServerConfig.BASE_URL}/api/usuarios/${user.idUser}")
+                val conn = url.openConnection() as java.net.HttpURLConnection
+                conn.requestMethod = "DELETE"
+                conn.connectTimeout = 5000
+
+                if (conn.responseCode == 200) {
+                    (context as? android.app.Activity)?.runOnUiThread {
+                        Toast.makeText(context, "Usuario suspendido exitosamente", Toast.LENGTH_SHORT).show()
+                    }
+                    fetchUsuarios()
+                }
+            } catch (e: Exception) {
+                (context as? android.app.Activity)?.runOnUiThread {
+                    Toast.makeText(context, "Error al eliminar: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         fetchUsuarios()
     }
@@ -105,7 +135,10 @@ fun GestionUsuariosScreen(onBackClick: () -> Unit) {
                 },
                 actions = {
                     Button(
-                        onClick = { showDialogNuevo = true },
+                        onClick = {
+                            userToEdit = null
+                            showDialogUser = true
+                        },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
                         shape = RoundedCornerShape(8.dp)
                     ) {
@@ -153,19 +186,59 @@ fun GestionUsuariosScreen(onBackClick: () -> Unit) {
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(usuarios) { user ->
-                                UserRowCard(user = user, onUserUpdated = { fetchUsuarios() })
+                                UserRowCard(
+                                    user = user,
+                                    onEditClick = {
+                                        userToEdit = user
+                                        showDialogUser = true
+                                    },
+                                    onDeleteClick = {
+                                        userToDelete = user
+                                    }
+                                )
                             }
                         }
                     }
                 }
             }
 
-            if (showDialogNuevo) {
-                NuevoUsuarioDialog(
-                    onDismiss = { showDialogNuevo = false },
-                    onUsuarioCreado = {
-                        showDialogNuevo = false
+            // User Edit / Create Modal Dialog
+            if (showDialogUser) {
+                UsuarioFormDialog(
+                    userToEdit = userToEdit,
+                    onDismiss = {
+                        showDialogUser = false
+                        userToEdit = null
+                    },
+                    onSuccess = {
+                        showDialogUser = false
+                        userToEdit = null
                         fetchUsuarios()
+                    }
+                )
+            }
+
+            // Delete Confirmation Dialog
+            userToDelete?.let { user ->
+                AlertDialog(
+                    onDismissRequest = { userToDelete = null },
+                    title = { Text("Suspender / Eliminar Usuario", fontWeight = FontWeight.Bold) },
+                    text = { Text("¿Estás seguro de que deseas eliminar a ${user.nombreCompleto}? Su cuenta cambiará a estatus de suspensión.") },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                deleteUsuarioLogico(user)
+                                userToDelete = null
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))
+                        ) {
+                            Text("Sí, eliminar", color = Color.White)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { userToDelete = null }) {
+                            Text("Cancelar")
+                        }
                     }
                 )
             }
@@ -174,7 +247,11 @@ fun GestionUsuariosScreen(onBackClick: () -> Unit) {
 }
 
 @Composable
-fun UserRowCard(user: UserItem, onUserUpdated: () -> Unit) {
+fun UserRowCard(
+    user: UserItem,
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit
+) {
     val statusColor = when (user.estatus) {
         1 -> Color(0xFF22C55E) // Activo
         2 -> Color(0xFFEAB308) // Inactivo
@@ -200,7 +277,7 @@ fun UserRowCard(user: UserItem, onUserUpdated: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                 Box(
                     modifier = Modifier
                         .size(42.dp)
@@ -226,8 +303,22 @@ fun UserRowCard(user: UserItem, onUserUpdated: () -> Unit) {
                 }
             }
 
-            TextButton(onClick = { /* Edit user */ }) {
-                Text("Editar", color = Color(0xFF2563EB), fontSize = 13.sp)
+            // Action Icons (Edit & Delete)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onEditClick) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Editar",
+                        tint = Color(0xFF2563EB)
+                    )
+                }
+                IconButton(onClick = onDeleteClick) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Eliminar",
+                        tint = Color(0xFFEF4444)
+                    )
+                }
             }
         }
     }
@@ -235,14 +326,17 @@ fun UserRowCard(user: UserItem, onUserUpdated: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NuevoUsuarioDialog(
+fun UsuarioFormDialog(
+    userToEdit: UserItem?,
     onDismiss: () -> Unit,
-    onUsuarioCreado: () -> Unit
+    onSuccess: () -> Unit
 ) {
-    var nombre by remember { mutableStateOf("") }
-    var telefono by remember { mutableStateOf("") }
+    val isEditMode = (userToEdit != null)
+
+    var nombre by remember { mutableStateOf(userToEdit?.nombreCompleto ?: "") }
+    var telefono by remember { mutableStateOf(userToEdit?.telefono ?: "") }
     var contrasena by remember { mutableStateOf("") }
-    var rolSeleccionado by remember { mutableStateOf(2) } // 1 = Admin, 2 = Repartidor
+    var rolSeleccionado by remember { mutableStateOf(userToEdit?.rol ?: 2) } // 1 = Admin, 2 = Repartidor
     var dropdownExpanded by remember { mutableStateOf(false) }
 
     var isLoading by remember { mutableStateOf(false) }
@@ -251,7 +345,11 @@ fun NuevoUsuarioDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Nuevo Usuario", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text(
+                text = if (isEditMode) "Editar Usuario" else "Nuevo Usuario",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
+            )
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -274,11 +372,15 @@ fun NuevoUsuarioDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Text("Contraseña", fontSize = 12.sp, color = Color.Gray)
+                Text(
+                    text = if (isEditMode) "Nueva contraseña (opcional)" else "Contraseña",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
                 OutlinedTextField(
                     value = contrasena,
                     onValueChange = { contrasena = it },
-                    placeholder = { Text("••••••••") },
+                    placeholder = { Text(if (isEditMode) "Mantener contraseña actual" else "••••••••") },
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -325,8 +427,8 @@ fun NuevoUsuarioDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    if (nombre.isBlank() || telefono.isBlank() || contrasena.isBlank()) {
-                        errorMsg = "Completa todos los campos obligatorios"
+                    if (nombre.isBlank() || telefono.isBlank() || (!isEditMode && contrasena.isBlank())) {
+                        errorMsg = "Completa los campos obligatorios"
                         return@Button
                     }
                     isLoading = true
@@ -336,25 +438,34 @@ fun NuevoUsuarioDialog(
                             val body = JSONObject().apply {
                                 put("nombre_completo", nombre.trim())
                                 put("telefono", telefono.trim())
-                                put("contrasena", contrasena)
+                                if (contrasena.isNotBlank()) {
+                                    put("contrasena", contrasena)
+                                }
                                 put("rol", rolSeleccionado)
-                                put("estatus", 1)
+                                put("estatus", userToEdit?.estatus ?: 1)
                             }.toString()
 
-                            val url = java.net.URL("${ServerConfig.BASE_URL}/api/usuarios")
+                            val urlString = if (isEditMode) {
+                                "${ServerConfig.BASE_URL}/api/usuarios/${userToEdit?.idUser}"
+                            } else {
+                                "${ServerConfig.BASE_URL}/api/usuarios"
+                            }
+
+                            val url = java.net.URL(urlString)
                             val conn = url.openConnection() as java.net.HttpURLConnection
-                            conn.requestMethod = "POST"
+                            conn.requestMethod = if (isEditMode) "PUT" else "POST"
                             conn.setRequestProperty("Content-Type", "application/json")
                             conn.connectTimeout = 5000
                             conn.doOutput = true
                             conn.outputStream.write(body.toByteArray(Charsets.UTF_8))
 
-                            if (conn.responseCode == 201) {
-                                onUsuarioCreado()
+                            val code = conn.responseCode
+                            if (code == 200 || code == 201) {
+                                onSuccess()
                             } else {
                                 val err = conn.errorStream?.bufferedReader()?.readText() ?: "Error"
                                 val errJson = try { JSONObject(err) } catch (e: Exception) { null }
-                                errorMsg = errJson?.optString("error") ?: "Error al crear usuario"
+                                errorMsg = errJson?.optString("error") ?: "Error al guardar cambios"
                             }
                         } catch (e: Exception) {
                             errorMsg = "Error de red: ${e.message}"
@@ -369,7 +480,7 @@ fun NuevoUsuarioDialog(
                 if (isLoading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp))
                 } else {
-                    Text("Guardar usuario")
+                    Text(if (isEditMode) "Editar usuario" else "Guardar usuario")
                 }
             }
         },
