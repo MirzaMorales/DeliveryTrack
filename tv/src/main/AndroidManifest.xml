@@ -6,10 +6,13 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
         android:label="DeliveryTrack TV Dashboard"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light">
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyBLiUs1tTdpU1bimlGdGZbU4jiZfrwcIZw" />
         
         <activity
             android:name=".presentation.TvDashboardActivity"

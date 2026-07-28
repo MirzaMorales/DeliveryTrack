@@ -1,6 +1,8 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
+import http from 'http';
+import { WebSocketServer, WebSocket } from 'ws';
 import { query } from './db';
 
 const app = express();
@@ -17,6 +19,79 @@ const statusMapping: { [key: number]: string } = {
   4: 'Cancelado',
   5: 'Retrasado',
   6: 'Entregado'
+};
+
+const clients = new Set<WebSocket>();
+
+// Robust broadcast function
+const broadcast = (message: any) => {
+  const payload = JSON.stringify(message);
+  for (const client of clients) {
+    if (client.readyState === WebSocket.OPEN) {
+      try {
+        client.send(payload);
+      } catch (error) {
+        console.error('Error broadcasting to client, connection might be stale:', error);
+      }
+    }
+  }
+};
+
+// Snapshot computation logic
+const getSnapshotData = async () => {
+  // 1. All active orders (estatus IN (1, 2, 3, 5))
+  const ordersResult = await query(
+    `SELECT id_pedido, nombre_cliente, telefono, direccion, referencia_lugar, descripcion_pedido, estatus, fecha, hora, id_repartidor
+     FROM pedido
+     WHERE estatus IN (1, 2, 3, 5)
+     ORDER BY id_pedido DESC`
+  );
+
+  // 2. Latest GPS location of each active courier
+  const gpsResult = await query(
+    `SELECT DISTINCT ON (id_repartidor) id_repartidor, latitud as lat, longitud as lng, velocidad, bateria, fecha_hora
+     FROM ubicaciongps
+     ORDER BY id_repartidor, fecha_hora DESC`
+  );
+
+  // 3. KPIs
+  const kpisResult = await query(`
+    SELECT
+      (SELECT COUNT(*) FROM pedido WHERE estatus IN (1, 2, 3, 5))::int as "pedidosActivos",
+      (SELECT COUNT(*) FROM pedido WHERE estatus = 6 AND fecha = CURRENT_DATE)::int as "entregadosHoy",
+      COALESCE((
+        SELECT AVG(EXTRACT(EPOCH FROM (h_entregado.fecha - h_aceptado.fecha)) / 60)
+        FROM pedido p
+        JOIN historialestatus h_aceptado ON p.id_pedido = h_aceptado.id_pedido AND h_aceptado.estatus = 'Aceptado'
+        JOIN historialestatus h_entregado ON p.id_pedido = h_entregado.id_pedido AND h_entregado.estatus = 'Entregado'
+        WHERE p.fecha = CURRENT_DATE
+      ), 0)::int as "tiempoPromedioMin",
+      (SELECT COUNT(*) FROM pedido WHERE estatus = 5)::int as "incidencias",
+      (SELECT COUNT(DISTINCT id_repartidor) FROM pedido WHERE estatus = 3)::int as "repartidoresEnRuta"
+  `);
+
+  return {
+    pedidos: ordersResult.rows.map(o => ({
+      ...o,
+      id_pedido: Number(o.id_pedido),
+      estatus: Number(o.estatus),
+      id_repartidor: o.id_repartidor ? Number(o.id_repartidor) : null
+    })),
+    repartidores: gpsResult.rows.map(g => ({
+      repartidorId: Number(g.id_repartidor),
+      lat: Number(g.lat),
+      lng: Number(g.lng),
+      velocidad: Number(g.velocidad),
+      bateria: Number(g.bateria)
+    })),
+    kpis: kpisResult.rows[0] || {
+      pedidosActivos: 0,
+      entregadosHoy: 0,
+      tiempoPromedioMin: 0,
+      incidencias: 0,
+      repartidoresEnRuta: 0
+    }
+  };
 };
 
 // Health Check
@@ -185,8 +260,8 @@ app.patch('/api/pedidos/:id/estatus', async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Invalid order ID' });
   }
 
-  if (typeof estatus !== 'number' || !repartidorId) {
-    return res.status(400).json({ error: 'estatus (number) and repartidorId (number) are required in request body' });
+  if (typeof estatus !== 'number') {
+    return res.status(400).json({ error: 'estatus (number) is required in request body' });
   }
 
   const statusStr = statusMapping[estatus];
@@ -204,9 +279,11 @@ app.patch('/api/pedidos/:id/estatus', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    if (orderCheck.rows[0].id_repartidor !== repartidorId) {
+    if (repartidorId && orderCheck.rows[0].id_repartidor !== repartidorId) {
       return res.status(403).json({ error: 'This order is not assigned to the specified courier' });
     }
+
+    const activeUserId = repartidorId || orderCheck.rows[0].id_repartidor || 1;
 
     await query('BEGIN');
 
@@ -218,10 +295,17 @@ app.patch('/api/pedidos/:id/estatus', async (req: Request, res: Response) => {
     await query(
       `INSERT INTO historialestatus (estatus, id_usuario, id_pedido) 
        VALUES ($1, $2, $3)`,
-      [statusStr, repartidorId, orderId]
+      [statusStr, activeUserId, orderId]
     );
 
     await query('COMMIT');
+
+    // Broadcast update
+    broadcast({
+      type: 'pedido_actualizado',
+      pedidoId: orderId,
+      nuevoEstatus: estatus
+    });
 
     res.json({
       message: 'Order status updated successfully',
@@ -521,9 +605,22 @@ app.post('/api/pedidos', async (req: Request, res: Response) => {
 
     await query('COMMIT');
 
+    const formattedOrder = {
+      ...newOrder,
+      id_pedido: Number(newOrder.id_pedido),
+      estatus: Number(newOrder.estatus),
+      id_repartidor: Number(newOrder.id_repartidor)
+    };
+
+    // Broadcast newly created order
+    broadcast({
+      type: 'pedido_creado',
+      pedido: formattedOrder
+    });
+
     res.status(201).json({
       message: 'Pedido creado exitosamente',
-      pedido: newOrder
+      pedido: formattedOrder
     });
   } catch (error: any) {
     await query('ROLLBACK');
@@ -532,7 +629,89 @@ app.post('/api/pedidos', async (req: Request, res: Response) => {
   }
 });
 
-// Start Server
-app.listen(port, () => {
+/**
+ * POST /api/ubicaciones
+ * Body: { lat, lng, velocidad, bateria, repartidorId }
+ */
+app.post('/api/ubicaciones', async (req: Request, res: Response) => {
+  const { lat, lng, velocidad, bateria, repartidorId } = req.body;
+
+  if (lat === undefined || lng === undefined || !repartidorId) {
+    return res.status(400).json({ error: 'lat, lng and repartidorId are required' });
+  }
+
+  try {
+    const parsedRepartidorId = parseInt(repartidorId, 10);
+    const parsedLat = parseFloat(lat);
+    const parsedLng = parseFloat(lng);
+    const parsedVelocidad = velocidad !== undefined ? parseFloat(velocidad) : 0;
+    const parsedBateria = bateria !== undefined ? parseInt(bateria, 10) : 100;
+
+    const result = await query(
+      `INSERT INTO ubicaciongps (latitud, longitud, velocidad, bateria, id_repartidor, fecha_hora)
+       VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+       RETURNING *`,
+      [parsedLat, parsedLng, parsedVelocidad, parsedBateria, parsedRepartidorId]
+    );
+
+    // Broadcast telemetry update
+    broadcast({
+      type: 'ubicacion_actualizada',
+      repartidorId: parsedRepartidorId,
+      lat: parsedLat,
+      lng: parsedLng,
+      velocidad: parsedVelocidad,
+      bateria: parsedBateria
+    });
+
+    res.status(201).json({
+      message: 'Ubicación registrada exitosamente',
+      ubicacion: result.rows[0]
+    });
+  } catch (error: any) {
+    console.error('Error inserting location:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
+
+// Start Server wrapped with HTTP & WebSockets
+const server = http.createServer(app);
+const wss = new WebSocketServer({ noServer: true });
+
+server.on('upgrade', (request, socket, head) => {
+  const pathname = new URL(request.url || '', `http://${request.headers.host}`).pathname;
+  if (pathname === '/ws') {
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit('connection', ws, request);
+    });
+  } else {
+    socket.destroy();
+  }
+});
+
+wss.on('connection', async (ws) => {
+  clients.add(ws);
+  console.log(`[ws]: Client connected. Total clients: ${clients.size}`);
+
+  // Send initial snapshot
+  try {
+    const snapshot = await getSnapshotData();
+    ws.send(JSON.stringify({ type: 'snapshot', data: snapshot }));
+  } catch (error) {
+    console.error('Error fetching snapshot for new client:', error);
+  }
+
+  ws.on('close', () => {
+    clients.delete(ws);
+    console.log(`[ws]: Client disconnected. Total clients: ${clients.size}`);
+  });
+
+  ws.on('error', (err) => {
+    console.error('[ws]: Client socket error:', err);
+    clients.delete(ws);
+  });
+});
+
+server.listen(port, () => {
   console.log(`[server]: Server is running at http://localhost:${port}`);
 });

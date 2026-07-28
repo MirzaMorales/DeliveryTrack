@@ -8,4 +8,5 @@ object ServerConfig {
      * - Para Producción en Servidor Remoto: "https://tu-api.onrender.com"
      */
     var BASE_URL: String = "http://10.0.2.2:3000"
+    var WS_URL: String = "ws://10.0.2.2:3000/ws"
 }
