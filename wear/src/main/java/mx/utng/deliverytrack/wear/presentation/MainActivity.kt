@@ -37,6 +37,7 @@ import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
+import mx.utng.deliverytrack.shared.config.ServerConfig
 import mx.utng.deliverytrack.wear.data.WearableDataLayerHelper
 import mx.utng.deliverytrack.wear.presentation.auth.WearCourierSession
 import mx.utng.deliverytrack.wear.presentation.auth.WearLoginScreen
@@ -44,6 +45,7 @@ import mx.utng.deliverytrack.wear.presentation.pedidos.WearPedidoCardItem
 import mx.utng.deliverytrack.wear.presentation.pedidos.WearPedidosCardsScreen
 import mx.utng.deliverytrack.wear.presentation.theme.DeliveryTrackTheme
 import org.json.JSONObject
+import kotlin.concurrent.thread
 
 class MainActivity : ComponentActivity() {
 
@@ -68,11 +70,16 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Data Layer helper is kept ONLY for things that are not critical/blocking:
+        // fetching an active order push and receiving haptic alerts from the phone.
+        // Status changes (accept/reject/en camino/entregado) are sent DIRECTLY to the
+        // backend from the watch below, because MessageClient.sendMessage() has no
+        // delivery guarantee (no retry, no queue) when the phone node isn't reachable
+        // at that exact instant — which was silently dropping status updates.
         dataLayerHelper = WearableDataLayerHelper(
             context = this,
             onActiveOrderResponse = { success, data ->
                 Log.d(TAG, "Active order response callback. Success=$success")
-                isLoading = false
                 if (success && data != null) {
                     val id = data.optInt("id_pedido", -1)
                     activeOrderId = id
@@ -81,7 +88,7 @@ class MainActivity : ComponentActivity() {
                     val ref = data.optString("referencia_lugar", "")
                     addressText = if (ref.isNotEmpty()) "$dir, $ref" else dir
                     orderDescription = data.optString("descripcion_pedido", "")
-                    
+
                     val oldStatus = orderStatus
                     val newStatus = data.optInt("estatus", -1)
                     orderStatus = newStatus
@@ -95,26 +102,15 @@ class MainActivity : ComponentActivity() {
                     statusMessage = ""
                 }
             },
-            onStatusUpdateResponse = { success, data ->
-                Log.d(TAG, "Status update response. Success=$success")
-                isLoading = false
-                if (success && data != null) {
-                    val pedido = data.optJSONObject("pedido")
-                    val newStatus = pedido?.optInt("estatus", -1) ?: -1
-                    orderStatus = newStatus
-                    statusMessage = ""
-                    
-                    if (newStatus == 6 || newStatus == 4) {
-                        statusMessage = if (newStatus == 6) "¡Entrega completada!" else "Pedido cancelado"
-                    }
-                } else {
-                    statusMessage = "Error al actualizar"
-                }
+            onStatusUpdateResponse = { _, _ ->
+                // No longer used: status updates now go direct to the backend
+                // via updateOrderStatusDirect(). Kept as a no-op so old messages
+                // from a stale phone build don't crash anything.
             },
             onHapticAlertReceived = { type ->
                 Log.d(TAG, "Haptic alert notification received: $type")
                 triggerHapticAlert(type)
-                
+
                 if (type.lowercase() == "cancelado") {
                     statusMessage = "Pedido cancelado por admin"
                 }
@@ -146,6 +142,7 @@ class MainActivity : ComponentActivity() {
                                 addressText = cardItem.direccion
                                 orderDescription = cardItem.descripcion
                                 orderStatus = cardItem.estatus
+                                statusMessage = ""
                             },
                             onChangeCourierClick = {
                                 activeCourier = null
@@ -165,44 +162,70 @@ class MainActivity : ComponentActivity() {
                             onBackToCardsList = {
                                 selectedPedido = null
                             },
-                            onAccept = {
-                                val id = activeOrderId
-                                val repId = activeCourier?.idUser ?: 2
-                                if (id != null) {
-                                    isLoading = true
-                                    dataLayerHelper.requestStatusUpdate(id, 1, repId)
-                                    orderStatus = 1
-                                }
-                            },
-                            onReject = {
-                                val id = activeOrderId
-                                val repId = activeCourier?.idUser ?: 2
-                                if (id != null) {
-                                    isLoading = true
-                                    dataLayerHelper.requestStatusUpdate(id, 4, repId)
-                                    orderStatus = 4
-                                }
-                            },
-                            onEnCamino = {
-                                val id = activeOrderId
-                                val repId = activeCourier?.idUser ?: 2
-                                if (id != null) {
-                                    isLoading = true
-                                    dataLayerHelper.requestStatusUpdate(id, 3, repId)
-                                    orderStatus = 3
-                                }
-                            },
-                            onEntregado = {
-                                val id = activeOrderId
-                                val repId = activeCourier?.idUser ?: 2
-                                if (id != null) {
-                                    isLoading = true
-                                    dataLayerHelper.requestStatusUpdate(id, 6, repId)
-                                    orderStatus = 6
-                                }
-                            }
+                            onAccept = { updateOrderStatusDirect(newStatus = 1) },
+                            onReject = { updateOrderStatusDirect(newStatus = 4) },
+                            onEnCamino = { updateOrderStatusDirect(newStatus = 3) },
+                            onEntregado = { updateOrderStatusDirect(newStatus = 6) }
                         )
                     }
+                }
+            }
+        }
+    }
+
+    /**
+     * Sends the status change directly to the backend from the watch,
+     * exactly like WearLoginScreen / WearPedidosCardsScreen already do.
+     * No optimistic UI update: orderStatus only changes once the backend
+     * confirms the change with a 200. On failure, a real error is shown.
+     */
+    private fun updateOrderStatusDirect(newStatus: Int) {
+        val id = activeOrderId ?: return
+        val repId = activeCourier?.idUser ?: 2
+
+        isLoading = true
+        statusMessage = ""
+
+        thread {
+            try {
+                val body = JSONObject().apply {
+                    put("estatus", newStatus)
+                }.toString()
+
+                val url = java.net.URL("${ServerConfig.BASE_URL}/api/pedidos/$id")
+                val conn = url.openConnection() as java.net.HttpURLConnection
+                applySslBypassWear(conn)
+                conn.requestMethod = "PUT"
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.connectTimeout = 8000
+                conn.readTimeout = 8000
+                conn.doOutput = true
+                conn.outputStream.write(body.toByteArray(Charsets.UTF_8))
+
+                val code = conn.responseCode
+
+                runOnUiThread {
+                    isLoading = false
+                    if (code == 200) {
+                        orderStatus = newStatus
+                        statusMessage = when (newStatus) {
+                            6 -> "¡Entrega completada!"
+                            4 -> "Pedido cancelado"
+                            else -> ""
+                        }
+                    } else {
+                        val errText = try {
+                            conn.errorStream?.bufferedReader()?.readText()
+                        } catch (_: Exception) { null }
+                        Log.e(TAG, "Status update failed. Code=$code Body=$errText")
+                        statusMessage = "Error al actualizar (código $code)"
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error updating order status directly", e)
+                runOnUiThread {
+                    isLoading = false
+                    statusMessage = "Error de red: ${e.message}"
                 }
             }
         }
@@ -241,6 +264,28 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         dataLayerHelper.unregisterListener()
+    }
+}
+
+/**
+ * Same SSL bypass used across the wear module (WearLoginScreen, WearPedidosCardsScreen)
+ * so the watch can talk to the backend directly, without going through the phone.
+ */
+private fun applySslBypassWear(conn: java.net.HttpURLConnection) {
+    if (conn is javax.net.ssl.HttpsURLConnection) {
+        try {
+            val trustAllCerts = arrayOf<javax.net.ssl.TrustManager>(
+                object : javax.net.ssl.X509TrustManager {
+                    override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = arrayOf()
+                    override fun checkClientTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
+                    override fun checkServerTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
+                }
+            )
+            val sc = javax.net.ssl.SSLContext.getInstance("SSL")
+            sc.init(null, trustAllCerts, java.security.SecureRandom())
+            conn.sslSocketFactory = sc.socketFactory
+            conn.hostnameVerifier = javax.net.ssl.HostnameVerifier { _, _ -> true }
+        } catch (_: Exception) {}
     }
 }
 
@@ -365,6 +410,7 @@ fun WearOrderDetailScreen(
                         ) {
                             Button(
                                 onClick = onReject,
+                                enabled = !isLoading,
                                 modifier = Modifier.weight(0.30f).height(36.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
                             ) {
@@ -372,6 +418,7 @@ fun WearOrderDetailScreen(
                             }
                             Button(
                                 onClick = onAccept,
+                                enabled = !isLoading,
                                 modifier = Modifier.weight(0.30f).height(36.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF388E3C))
                             ) {
@@ -382,6 +429,7 @@ fun WearOrderDetailScreen(
                     1 -> {
                         Button(
                             onClick = onEnCamino,
+                            enabled = !isLoading,
                             modifier = Modifier.fillMaxWidth().height(36.dp).padding(horizontal = 16.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2))
                         ) {
@@ -391,6 +439,7 @@ fun WearOrderDetailScreen(
                     3, 5 -> {
                         Button(
                             onClick = onEntregado,
+                            enabled = !isLoading,
                             modifier = Modifier.fillMaxWidth().height(36.dp).padding(horizontal = 16.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF57C00))
                         ) {
