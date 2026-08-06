@@ -27,6 +27,24 @@ import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.concurrent.thread
 
+private fun applySslBypass(conn: java.net.HttpURLConnection) {
+    if (conn is javax.net.ssl.HttpsURLConnection) {
+        try {
+            val trustAllCerts = arrayOf<javax.net.ssl.TrustManager>(
+                object : javax.net.ssl.X509TrustManager {
+                    override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = arrayOf()
+                    override fun checkClientTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
+                    override fun checkServerTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
+                }
+            )
+            val sc = javax.net.ssl.SSLContext.getInstance("SSL")
+            sc.init(null, trustAllCerts, java.security.SecureRandom())
+            conn.sslSocketFactory = sc.socketFactory
+            conn.hostnameVerifier = javax.net.ssl.HostnameVerifier { _, _ -> true }
+        } catch (_: Exception) {}
+    }
+}
+
 class NuevoPedidoActivity : ComponentActivity() {
 
     private val backendUrl = ServerConfig.BASE_URL
@@ -91,6 +109,7 @@ fun NuevoPedidoScreen(
             try {
                 val url = java.net.URL("$backendUrl/api/usuarios/repartidores")
                 val conn = url.openConnection() as java.net.HttpURLConnection
+                applySslBypass(conn)
                 conn.requestMethod = "GET"
                 conn.connectTimeout = 5000
                 conn.readTimeout = 5000
@@ -321,6 +340,7 @@ fun NuevoPedidoScreen(
                             val urlString = if (isEditMode) "$backendUrl/api/pedidos/$editOrderId" else "$backendUrl/api/pedidos"
                             val url = java.net.URL(urlString)
                             val conn = url.openConnection() as java.net.HttpURLConnection
+                            applySslBypass(conn)
                             conn.requestMethod = if (isEditMode) "PUT" else "POST"
                             conn.setRequestProperty("Content-Type", "application/json")
                             conn.connectTimeout = 6000

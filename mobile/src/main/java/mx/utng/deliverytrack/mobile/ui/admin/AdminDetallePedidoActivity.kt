@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -30,6 +31,24 @@ import mx.utng.deliverytrack.mobile.ui.NuevoPedidoActivity
 import mx.utng.deliverytrack.shared.config.ServerConfig
 import org.json.JSONObject
 import kotlin.concurrent.thread
+
+private fun applySslBypass(conn: java.net.HttpURLConnection) {
+    if (conn is javax.net.ssl.HttpsURLConnection) {
+        try {
+            val trustAllCerts = arrayOf<javax.net.ssl.TrustManager>(
+                object : javax.net.ssl.X509TrustManager {
+                    override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = arrayOf()
+                    override fun checkClientTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
+                    override fun checkServerTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
+                }
+            )
+            val sc = javax.net.ssl.SSLContext.getInstance("SSL")
+            sc.init(null, trustAllCerts, java.security.SecureRandom())
+            conn.sslSocketFactory = sc.socketFactory
+            conn.hostnameVerifier = javax.net.ssl.HostnameVerifier { _, _ -> true }
+        } catch (_: Exception) {}
+    }
+}
 
 data class AdminOrderDetail(
     val idPedido: Int,
@@ -86,6 +105,7 @@ fun AdminDetallePedidoScreen(
             try {
                 val url = java.net.URL("${ServerConfig.BASE_URL}/api/pedidos/$orderId")
                 val conn = url.openConnection() as java.net.HttpURLConnection
+                applySslBypass(conn)
                 conn.requestMethod = "GET"
                 conn.connectTimeout = 5000
 
@@ -215,19 +235,52 @@ fun AdminDetallePedidoScreen(
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(160.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
+                                .wrapContentHeight(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                         ) {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text("UBICACIÓN INDIVIDUAL DE REPARTIDOR", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                    }
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text("Rastreo GPS de ${item.repartidorNombre} en mapa interactivo", color = Color(0xFF94A3B8), fontSize = 11.sp)
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(14.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("RASTREO GPS EN MAPA", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Repartidor: ${item.repartidorNombre} ➔ Destino: ${item.direccion}",
+                                    color = Color(0xFFCBD5E1),
+                                    fontSize = 11.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Button(
+                                    onClick = {
+                                        try {
+                                            val encodedAddress = java.net.URLEncoder.encode(item.direccion, "UTF-8")
+                                            val webMapIntent = android.content.Intent(
+                                                android.content.Intent.ACTION_VIEW,
+                                                android.net.Uri.parse("https://www.google.com/maps/search/?api=1&query=$encodedAddress")
+                                            )
+                                            context.startActivity(webMapIntent)
+                                        } catch (_: Exception) {
+                                            Toast.makeText(context, "No se pudo abrir Google Maps", Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                                    shape = RoundedCornerShape(10.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(38.dp)
+                                ) {
+                                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Ver Ruta GPS en Google Maps", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                                 }
                             }
                         }

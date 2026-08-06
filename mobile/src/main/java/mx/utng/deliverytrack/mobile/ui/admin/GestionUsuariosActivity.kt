@@ -30,6 +30,24 @@ import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.concurrent.thread
 
+private fun applySslBypass(conn: java.net.HttpURLConnection) {
+    if (conn is javax.net.ssl.HttpsURLConnection) {
+        try {
+            val trustAllCerts = arrayOf<javax.net.ssl.TrustManager>(
+                object : javax.net.ssl.X509TrustManager {
+                    override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = arrayOf()
+                    override fun checkClientTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
+                    override fun checkServerTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
+                }
+            )
+            val sc = javax.net.ssl.SSLContext.getInstance("SSL")
+            sc.init(null, trustAllCerts, java.security.SecureRandom())
+            conn.sslSocketFactory = sc.socketFactory
+            conn.hostnameVerifier = javax.net.ssl.HostnameVerifier { _, _ -> true }
+        } catch (_: Exception) {}
+    }
+}
+
 data class UserItem(
     val idUser: Int,
     val nombreCompleto: String,
@@ -69,6 +87,7 @@ fun GestionUsuariosScreen(onBackClick: () -> Unit) {
             try {
                 val url = java.net.URL("${ServerConfig.BASE_URL}/api/usuarios")
                 val conn = url.openConnection() as java.net.HttpURLConnection
+                applySslBypass(conn)
                 conn.requestMethod = "GET"
 
                 if (conn.responseCode == 200) {
@@ -101,6 +120,7 @@ fun GestionUsuariosScreen(onBackClick: () -> Unit) {
             try {
                 val url = java.net.URL("${ServerConfig.BASE_URL}/api/usuarios/${user.idUser}")
                 val conn = url.openConnection() as java.net.HttpURLConnection
+                applySslBypass(conn)
                 conn.requestMethod = "DELETE"
                 conn.connectTimeout = 5000
 
