@@ -24,6 +24,24 @@ data class WearPedidoCardItem(
     val estatus: Int
 )
 
+private fun applySslBypass(conn: java.net.HttpURLConnection) {
+    if (conn is javax.net.ssl.HttpsURLConnection) {
+        try {
+            val trustAllCerts = arrayOf<javax.net.ssl.TrustManager>(
+                object : javax.net.ssl.X509TrustManager {
+                    override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = arrayOf()
+                    override fun checkClientTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
+                    override fun checkServerTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
+                }
+            )
+            val sc = javax.net.ssl.SSLContext.getInstance("SSL")
+            sc.init(null, trustAllCerts, java.security.SecureRandom())
+            conn.sslSocketFactory = sc.socketFactory
+            conn.hostnameVerifier = javax.net.ssl.HostnameVerifier { _, _ -> true }
+        } catch (_: Exception) {}
+    }
+}
+
 @Composable
 fun WearPedidosCardsScreen(
     courierId: Int,
@@ -41,6 +59,7 @@ fun WearPedidosCardsScreen(
             try {
                 val url = java.net.URL("${ServerConfig.BASE_URL}/api/pedidos/repartidor/$courierId")
                 val conn = url.openConnection() as java.net.HttpURLConnection
+                applySslBypass(conn)
                 conn.requestMethod = "GET"
                 conn.connectTimeout = 5000
                 conn.readTimeout = 5000

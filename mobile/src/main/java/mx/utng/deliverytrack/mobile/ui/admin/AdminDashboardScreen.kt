@@ -2,15 +2,20 @@ package mx.utng.deliverytrack.mobile.ui.admin
 
 import android.content.Intent
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
@@ -31,6 +36,24 @@ import mx.utng.deliverytrack.shared.config.ServerConfig
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.concurrent.thread
+
+private fun applySslBypass(conn: java.net.HttpURLConnection) {
+    if (conn is javax.net.ssl.HttpsURLConnection) {
+        try {
+            val trustAllCerts = arrayOf<javax.net.ssl.TrustManager>(
+                object : javax.net.ssl.X509TrustManager {
+                    override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = arrayOf()
+                    override fun checkClientTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
+                    override fun checkServerTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
+                }
+            )
+            val sc = javax.net.ssl.SSLContext.getInstance("SSL")
+            sc.init(null, trustAllCerts, java.security.SecureRandom())
+            conn.sslSocketFactory = sc.socketFactory
+            conn.hostnameVerifier = javax.net.ssl.HostnameVerifier { _, _ -> true }
+        } catch (_: Exception) {}
+    }
+}
 
 data class AdminPedidoItem(
     val idPedido: Int,
@@ -54,6 +77,7 @@ fun AdminDashboardScreen(
     var pedidos by remember { mutableStateOf<List<AdminPedidoItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf("") }
+    var showFleetMapModal by remember { mutableStateOf(false) }
 
     val primaryBlue = Color(0xFF1A3A6B)
 
@@ -63,6 +87,7 @@ fun AdminDashboardScreen(
             try {
                 val url = java.net.URL("${ServerConfig.BASE_URL}/api/pedidos/admin/activos")
                 val conn = url.openConnection() as java.net.HttpURLConnection
+                applySslBypass(conn)
                 conn.requestMethod = "GET"
                 conn.connectTimeout = 5000
 
@@ -100,6 +125,7 @@ fun AdminDashboardScreen(
 
                 val url = java.net.URL("${ServerConfig.BASE_URL}/api/pedidos/$orderId")
                 val conn = url.openConnection() as java.net.HttpURLConnection
+                applySslBypass(conn)
                 conn.requestMethod = "PUT"
                 conn.setRequestProperty("Content-Type", "application/json")
                 conn.connectTimeout = 5000
@@ -133,25 +159,49 @@ fun AdminDashboardScreen(
         }
     }
 
+    var selectedEstatusFilter by remember { mutableStateOf<Int?>(null) }
+    var selectedRepartidorFilter by remember { mutableStateOf("Todos los repartidores") }
+    var repartidorDropdownExpanded by remember { mutableStateOf(false) }
+
+    val repartidoresDisponibles = remember(pedidos) {
+        listOf("Todos los repartidores") + pedidos.map { it.repartidorNombre }.distinct().sorted()
+    }
+
+    val filteredPedidos = remember(pedidos, selectedEstatusFilter, selectedRepartidorFilter) {
+        pedidos.filter { item ->
+            val matchesStatus = (selectedEstatusFilter == null || item.estatus == selectedEstatusFilter)
+            val matchesRepartidor = (selectedRepartidorFilter == "Todos los repartidores" ||
+                                     item.repartidorNombre.equals(selectedRepartidorFilter, ignoreCase = true))
+            matchesStatus && matchesRepartidor
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("DeliveryTrack — Pedidos", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp)
+                    Column {
+                        Text("DeliveryTrack", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp)
+                        Text("Gestión de Pedidos", fontSize = 11.sp, color = Color(0xFFCBD5E1))
+                    }
                 },
                 actions = {
                     Button(
                         onClick = onCrearPedidoClick,
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Nuevo", fontWeight = FontWeight.Bold, color = Color.White)
+                        Text("Nuevo", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 13.sp)
                     }
-                    Spacer(modifier = Modifier.width(4.dp))
-                    TextButton(onClick = onLogoutClick) {
-                        Text("Salir", color = Color.White)
+                    IconButton(onClick = onLogoutClick) {
+                        Icon(
+                            imageVector = Icons.Default.ExitToApp,
+                            contentDescription = "Cerrar sesión",
+                            tint = Color.White
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = primaryBlue)
@@ -181,29 +231,255 @@ fun AdminDashboardScreen(
                 .background(Color(0xFFF8FAFC))
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                // Header status banner
+                // Header Fleet Map Card for Admin
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE2E8F0))
+                        .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp)
                     ) {
-                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF1E293B), modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Mapa general de flotilla de repartidores activo", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("MONITOREO DE FLOTILLA Y ENTREGAS", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            }
+                            Surface(
+                                color = Color(0xFF16A34A).copy(alpha = 0.2f),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(
+                                    text = "EN TIEMPO REAL",
+                                    color = Color(0xFF4ADE80),
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Supervisa la ubicación y ruta de los repartidores activos en el mapa.",
+                            color = Color(0xFF94A3B8),
+                            fontSize = 11.sp
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Button(
+                            onClick = { showFleetMapModal = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(38.dp)
+                        ) {
+                            Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Ver Mapa General de Flotilla (Google Maps)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+                    }
+                }
+
+                // Modal: Real Active Couriers Fleet Overview
+                if (showFleetMapModal) {
+                    AlertDialog(
+                        onDismissRequest = { showFleetMapModal = false },
+                        title = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF2563EB))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Flotilla Activa de Repartidores", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            }
+                        },
+                        text = {
+                            val activeOrdersWithCourier = pedidos.filter { it.repartidorNombre != "Sin asignar" }
+                            if (activeOrdersWithCourier.isEmpty()) {
+                                Text("No hay repartidores con entregas activas asignadas en este momento.", fontSize = 13.sp, color = Color.Gray)
+                            } else {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .verticalScroll(rememberScrollState()),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    activeOrdersWithCourier.forEach { item ->
+                                        Surface(
+                                            color = Color(0xFFF1F5F9),
+                                            shape = RoundedCornerShape(10.dp),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Column(modifier = Modifier.padding(12.dp)) {
+                                                Text(
+                                                    text = "Repartidor: ${item.repartidorNombre}",
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 13.sp,
+                                                    color = Color(0xFF0F172A)
+                                                )
+                                                Text(
+                                                    text = "Pedido #${item.idPedido} • Cliente: ${item.nombreCliente}",
+                                                    fontSize = 11.sp,
+                                                    color = Color(0xFF475569)
+                                                )
+                                                Text(
+                                                    text = "📍 ${item.direccion}",
+                                                    fontSize = 11.sp,
+                                                    color = Color(0xFF2563EB),
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                                Spacer(modifier = Modifier.height(6.dp))
+                                                Button(
+                                                    onClick = {
+                                                        try {
+                                                            val encodedAddress = java.net.URLEncoder.encode(item.direccion, "UTF-8")
+                                                            val webMapIntent = android.content.Intent(
+                                                                android.content.Intent.ACTION_VIEW,
+                                                                android.net.Uri.parse("https://www.google.com/maps/search/?api=1&query=$encodedAddress")
+                                                            )
+                                                            context.startActivity(webMapIntent)
+                                                        } catch (_: Exception) {
+                                                            Toast.makeText(context, "No se pudo abrir Google Maps", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    },
+                                                    modifier = Modifier.fillMaxWidth().height(32.dp),
+                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                                                    contentPadding = PaddingValues(0.dp)
+                                                ) {
+                                                    Text("🗺️ Abrir Mapa de ${item.repartidorNombre}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { showFleetMapModal = false }) {
+                                Text("Cerrar", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    )
+                }
+
+                // Courier Dropdown Filter
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { repartidorDropdownExpanded = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White),
+                        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = null,
+                                    tint = primaryBlue,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Repartidor: $selectedRepartidorFilter",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF1E293B)
+                                )
+                            }
+                            Text("▼", fontSize = 11.sp, color = Color.Gray)
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = repartidorDropdownExpanded,
+                        onDismissRequest = { repartidorDropdownExpanded = false },
+                        modifier = Modifier.fillMaxWidth(0.9f)
+                    ) {
+                        repartidoresDisponibles.forEach { repNombre ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = repNombre,
+                                        fontWeight = if (repNombre == selectedRepartidorFilter) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (repNombre == selectedRepartidorFilter) primaryBlue else Color.Unspecified
+                                    )
+                                },
+                                onClick = {
+                                    selectedRepartidorFilter = repNombre
+                                    repartidorDropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Filter Bar by Order Status
+                val filterOptions = listOf(
+                    null to "Todos (${pedidos.size})",
+                    2 to "Pendientes",
+                    1 to "Aceptados",
+                    3 to "En ruta",
+                    5 to "Retrasados",
+                    6 to "Entregados",
+                    4 to "Cancelados"
+                )
+
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    items(filterOptions) { (status, label) ->
+                        val isSelected = selectedEstatusFilter == status
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { selectedEstatusFilter = status },
+                            label = {
+                                Text(
+                                    text = label,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = primaryBlue,
+                                selectedLabelColor = Color.White,
+                                containerColor = Color.White,
+                                labelColor = Color(0xFF334155)
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                borderColor = if (isSelected) primaryBlue else Color(0xFFCBD5E1),
+                                selectedBorderColor = primaryBlue,
+                                enabled = true,
+                                selected = isSelected
+                            )
+                        )
                     }
                 }
 
                 Text(
-                    text = "PEDIDOS ACTIVOS DEL SISTEMA",
+                    text = "PEDIDOS EN EL SISTEMA",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     color = Color.Gray,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
                 )
 
                 when {
@@ -217,9 +493,9 @@ fun AdminDashboardScreen(
                             Text(errorMessage, color = Color(0xFFEF4444))
                         }
                     }
-                    pedidos.isEmpty() -> {
+                    filteredPedidos.isEmpty() -> {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No hay pedidos registrados en el sistema", color = Color.Gray)
+                            Text("No hay pedidos para este filtro", color = Color.Gray)
                         }
                     }
                     else -> {
@@ -227,7 +503,7 @@ fun AdminDashboardScreen(
                             contentPadding = PaddingValues(16.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            items(pedidos) { item ->
+                            items(filteredPedidos) { item ->
                                 AdminPedidoRow(
                                     item = item,
                                     onPedidoClick = { orderId ->

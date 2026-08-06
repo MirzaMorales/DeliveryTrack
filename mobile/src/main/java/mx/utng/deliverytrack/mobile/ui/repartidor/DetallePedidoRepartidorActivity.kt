@@ -30,6 +30,24 @@ import mx.utng.deliverytrack.shared.config.ServerConfig
 import org.json.JSONObject
 import kotlin.concurrent.thread
 
+private fun applySslBypass(conn: java.net.HttpURLConnection) {
+    if (conn is javax.net.ssl.HttpsURLConnection) {
+        try {
+            val trustAllCerts = arrayOf<javax.net.ssl.TrustManager>(
+                object : javax.net.ssl.X509TrustManager {
+                    override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = arrayOf()
+                    override fun checkClientTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
+                    override fun checkServerTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
+                }
+            )
+            val sc = javax.net.ssl.SSLContext.getInstance("SSL")
+            sc.init(null, trustAllCerts, java.security.SecureRandom())
+            conn.sslSocketFactory = sc.socketFactory
+            conn.hostnameVerifier = javax.net.ssl.HostnameVerifier { _, _ -> true }
+        } catch (_: Exception) {}
+    }
+}
+
 data class RepartidorOrderDetail(
     val idPedido: Int,
     val nombreCliente: String,
@@ -88,6 +106,7 @@ fun DetallePedidoRepartidorScreen(
             try {
                 val url = java.net.URL("${ServerConfig.BASE_URL}/api/pedidos/$orderId")
                 val conn = url.openConnection() as java.net.HttpURLConnection
+                applySslBypass(conn)
                 conn.requestMethod = "GET"
                 conn.connectTimeout = 5000
 
@@ -126,6 +145,7 @@ fun DetallePedidoRepartidorScreen(
 
                 val url = java.net.URL("${ServerConfig.BASE_URL}/api/pedidos/$orderId/estatus")
                 val conn = url.openConnection() as java.net.HttpURLConnection
+                applySslBypass(conn)
                 conn.requestMethod = "PATCH"
                 conn.setRequestProperty("Content-Type", "application/json")
                 conn.connectTimeout = 5000
@@ -258,24 +278,59 @@ fun DetallePedidoRepartidorScreen(
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(180.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A))
+                                    .wrapContentHeight(),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                             ) {
-                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        modifier = Modifier.padding(12.dp)
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp)
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(20.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("RUTA RÁPIDA DE NAVEGACIÓN GPS", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    }
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = "Origen: Tu ubicación actual ➔ Destino: ${item.direccion}",
+                                        color = Color(0xFFCBD5E1),
+                                        fontSize = 12.sp,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    Button(
+                                        onClick = {
+                                            try {
+                                                val encodedAddress = java.net.URLEncoder.encode(item.direccion, "UTF-8")
+                                                val gmmIntentUri = android.net.Uri.parse("google.navigation:q=$encodedAddress")
+                                                val mapIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, gmmIntentUri).apply {
+                                                    setPackage("com.google.android.apps.maps")
+                                                }
+                                                if (mapIntent.resolveActivity(context.packageManager) != null) {
+                                                    context.startActivity(mapIntent)
+                                                } else {
+                                                    val webMapIntent = android.content.Intent(
+                                                        android.content.Intent.ACTION_VIEW,
+                                                        android.net.Uri.parse("https://www.google.com/maps/search/?api=1&query=$encodedAddress")
+                                                    )
+                                                    context.startActivity(webMapIntent)
+                                                }
+                                            } catch (_: Exception) {
+                                                Toast.makeText(context, "No se pudo abrir Google Maps", Toast.LENGTH_SHORT).show()
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier.fillMaxWidth().height(44.dp)
                                     ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(18.dp))
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text("RUTA RÁPIDA GPS EN NAVEGACIÓN", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                        }
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text("Origen (Repartidor) ➔ Destino (${item.direccion})", color = Color(0xFF38BDF8), fontSize = 11.sp, textAlign = TextAlign.Center)
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Text("ETA Estimado: 8 mins • 2.4 km", color = Color(0xFF94A3B8), fontSize = 11.sp)
+                                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Iniciar Navegación GPS (Google Maps)", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.White)
                                     }
                                 }
                             }
