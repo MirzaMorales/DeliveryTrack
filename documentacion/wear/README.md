@@ -1,0 +1,1 @@
+# Documentación - Módulo Wear (WearOS)
