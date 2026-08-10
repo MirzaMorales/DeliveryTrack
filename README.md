@@ -14,6 +14,31 @@ Plataforma de telemetría y gestión de entregas en tiempo real para repartidore
 
 ---
 
+## Beneficiario
+
+- **Nombre:** Sandra Elizabeth Delgado Gutierrez
+- **Negocio:** Rosticería "Lindavista"
+- **Puesto:** Propietaria
+- **Dirección:** Miguel Hidalgo #2, Local 3
+
+DeliveryTrack está pensado para negocios de comida como la **Rosticería "Lindavista"**, que realizan entregas a domicilio con repartidores propios. Al centralizar la información en el reloj inteligente, el repartidor puede aceptar, iniciar y confirmar entregas con un solo vistazo y un toque, sin distraerse revisando el teléfono, mientras la propietaria obtiene trazabilidad en tiempo real del estatus de cada pedido (aceptado, en ruta, entregado, cancelado o retrasado) para mejorar la operación del negocio y la experiencia de sus clientes.
+
+---
+
+## Diagrama de arquitectura
+
+El siguiente diagrama resume el flujo de datos entre el reloj (sensor/wearable), el teléfono (puente de comunicación) y el backend, que persiste la información en PostgreSQL:
+
+<img width="1267" height="672" alt="image" src="https://github.com/user-attachments/assets/d217677c-c5e8-4641-a2fd-c6e316d3bfce" />
+
+
+**Flujo resumido:**
+1. El **reloj (WearOS)** carga el pedido activo del repartidor y permite actualizar su estatus (Aceptar → En camino → Entregado).
+2. El **teléfono (Mobile Hub)** actúa como puente vía **Wearable Data Layer API**, reenviando eventos (nuevo pedido, cancelación) al reloj con alertas hápticas, y consumiendo la **API REST** del backend por HTTP (OkHttp).
+3. El **backend** (Node.js + Express + TypeScript) expone los endpoints REST y persiste usuarios, pedidos, ubicaciones GPS e historial de estatus en **PostgreSQL**.
+
+---
+
 ## Objetivo
 
 Desarrollar una plataforma multi-dispositivo que permita a un repartidor gestionar sus pedidos activos directamente desde su reloj inteligente (WearOS), mientras un dispositivo móvil actúa como puente de comunicación (Mobile Hub) entre el reloj y un backend centralizado, manteniendo sincronizado en tiempo real el estatus de cada entrega y notificando al repartidor mediante alertas hápticas ante eventos relevantes (nuevo pedido asignado, cancelación, etc.).
@@ -56,8 +81,6 @@ Desarrollar una plataforma multi-dispositivo que permita a un repartidor gestion
 | Backend | Node.js + Express + TypeScript |
 | Base de datos | PostgreSQL 16 (Docker) |
 | Build system | Gradle (Kotlin DSL) |
-
----
 
 ---
 
@@ -226,5 +249,3 @@ docker exec -it deliverytrack-db psql -U postgres -d deliverytrack \
 ![Pedido Camino](screenshots/pedidoenCamino.png)
 ### Info Base de datos
 ![HistorialEstatusPedidos](screenshots/estatusPedido.png)
-
-
