@@ -201,7 +201,7 @@ docker exec -it deliverytrack-db psql -U postgres -d deliverytrack \
 
 ## Capturas de pantalla
 
-### Wearable Repartidor
+### Mobile Repartidor
 #### Inicio de Sesión
 <img width="367" height="827" alt="image" src="https://github.com/user-attachments/assets/7e0bdd91-73ad-4f65-9808-e1f7768e1ce1" />
 #### Dashboard
@@ -220,7 +220,7 @@ docker exec -it deliverytrack-db psql -U postgres -d deliverytrack \
 <img width="361" height="832" alt="Pendiendes" src="https://github.com/user-attachments/assets/3d7305eb-ee93-413d-a22c-4aee0899b30b" />
 
 
-### Wearable Admin
+### Mobile Admin
 #### Inicio de Sesión
 <img width="367" height="827" alt="image" src="https://github.com/user-attachments/assets/7e0bdd91-73ad-4f65-9808-e1f7768e1ce1" />
 #### Dashboard
@@ -246,8 +246,10 @@ docker exec -it deliverytrack-db psql -U postgres -d deliverytrack \
 <img width="366" height="822" alt="Filtro por Status" src="https://github.com/user-attachments/assets/12a6ada5-165b-4ad7-8404-eef1416d559d" />
 
 
-### App móvil
+### Wearable
 #### Inicio de Sesión
+<img width="477" height="483" alt="inicio sesion" src="https://github.com/user-attachments/assets/5628f8a7-1bdc-49d2-9cb9-d26d834b4072" />
+
 
 ### TV 
 #### Estado inicial
