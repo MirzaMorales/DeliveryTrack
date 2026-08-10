@@ -68,6 +68,17 @@ Desarrollar una plataforma multi-dispositivo que permita a un repartidor gestion
 - Persiste usuarios, pedidos, ubicaciones GPS e historial de estatus en PostgreSQL.
 - Incluye script de inicialización de base de datos con datos de prueba (un repartidor y un pedido pendiente).
 
+### Smart TV (TV Dashboard)
+- Panel logístico centralizado diseñado para pantallas grandes (Smart TV / Leanback).
+- Conexión persistente mediante **WebSockets** para recibir actualizaciones en tiempo real sobre la ubicación de los repartidores y cambios en los pedidos sin recargar la página.
+- Visualización de indicadores clave (KPIs) en tiempo real: Pedidos activos, Entregados hoy, Tiempo promedio de entrega, Incidencias y Repartidores en ruta.
+- Mapa dinámico (Google Maps) que muestra la telemetría en tiempo real y la ubicación de los repartidores activos.
+
+### Módulo Shared
+- Biblioteca compartida reutilizable entre los módulos `mobile`, `wear` y `tv`.
+- Contiene configuraciones centralizadas del servidor (`ServerConfig`) como las URLs del backend y WebSocket (`BASE_URL` y `WS_URL`).
+- Reduce la duplicación de código compartiendo clases de datos comunes o utilidades.
+
 ---
 
 ## Tecnologías utilizadas
