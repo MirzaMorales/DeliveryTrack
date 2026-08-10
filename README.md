@@ -14,6 +14,31 @@ Plataforma de telemetría y gestión de entregas en tiempo real para repartidore
 
 ---
 
+## Beneficiario
+
+- **Nombre:** Sandra Elizabeth Delgado Gutierrez
+- **Negocio:** Rosticería "Lindavista"
+- **Puesto:** Propietaria
+- **Dirección:** Miguel Hidalgo #2, Local 3
+
+DeliveryTrack está pensado para negocios de comida como la **Rosticería "Lindavista"**, que realizan entregas a domicilio con repartidores propios. Al centralizar la información en el reloj inteligente, el repartidor puede aceptar, iniciar y confirmar entregas con un solo vistazo y un toque, sin distraerse revisando el teléfono, mientras la propietaria obtiene trazabilidad en tiempo real del estatus de cada pedido (aceptado, en ruta, entregado, cancelado o retrasado) para mejorar la operación del negocio y la experiencia de sus clientes.
+
+---
+
+## Diagrama de arquitectura
+
+El siguiente diagrama resume el flujo de datos entre el reloj (sensor/wearable), el teléfono (puente de comunicación) y el backend, que persiste la información en PostgreSQL:
+
+<img width="1267" height="672" alt="image" src="https://github.com/user-attachments/assets/d217677c-c5e8-4641-a2fd-c6e316d3bfce" />
+
+
+**Flujo resumido:**
+1. El **reloj (WearOS)** carga el pedido activo del repartidor y permite actualizar su estatus (Aceptar → En camino → Entregado).
+2. El **teléfono (Mobile Hub)** actúa como puente vía **Wearable Data Layer API**, reenviando eventos (nuevo pedido, cancelación) al reloj con alertas hápticas, y consumiendo la **API REST** del backend por HTTP (OkHttp).
+3. El **backend** (Node.js + Express + TypeScript) expone los endpoints REST y persiste usuarios, pedidos, ubicaciones GPS e historial de estatus en **PostgreSQL**.
+
+---
+
 ## Objetivo
 
 Desarrollar una plataforma multi-dispositivo que permita a un repartidor gestionar sus pedidos activos directamente desde su reloj inteligente (WearOS), mientras un dispositivo móvil actúa como puente de comunicación (Mobile Hub) entre el reloj y un backend centralizado, manteniendo sincronizado en tiempo real el estatus de cada entrega y notificando al repartidor mediante alertas hápticas ante eventos relevantes (nuevo pedido asignado, cancelación, etc.).
@@ -56,8 +81,6 @@ Desarrollar una plataforma multi-dispositivo que permita a un repartidor gestion
 | Backend | Node.js + Express + TypeScript |
 | Base de datos | PostgreSQL 16 (Docker) |
 | Build system | Gradle (Kotlin DSL) |
-
----
 
 ---
 
@@ -178,53 +201,57 @@ docker exec -it deliverytrack-db psql -U postgres -d deliverytrack \
 
 ## Capturas de pantalla
 
-> Agrega aquí las capturas de pantalla de la app del reloj (WearOS), la app móvil (Mobile Hub) y el backend en ejecución.
+### Mobile Repartidor
+#### Inicio de Sesión
+<img width="367" height="827" alt="image" src="https://github.com/user-attachments/assets/7e0bdd91-73ad-4f65-9808-e1f7768e1ce1" />
+#### Dashboard
+<img width="365" height="822" alt="image" src="https://github.com/user-attachments/assets/6e278e26-f977-468a-9636-f322112ec738" />
+#### Mi perfil
+<img width="365" height="831" alt="image" src="https://github.com/user-attachments/assets/3039646b-04bd-4133-aab9-5a70952d87ea" />
+#### Ver detalle pedido
+<img width="377" height="767" alt="image" src="https://github.com/user-attachments/assets/7fa5ec8d-ba37-4ae1-ae4a-930f8b657915" />
+#### Iniciar Navegación
+<img width="370" height="822" alt="image" src="https://github.com/user-attachments/assets/ff5d3b8f-3641-433a-a9b2-3ed2ed1b5935" />
+#### Filtros
+<img width="366" height="826" alt="Cancelados" src="https://github.com/user-attachments/assets/7b94090f-78bc-4ba8-92c5-80b2c9df7b06" />
+<img width="367" height="795" alt="Aceptados" src="https://github.com/user-attachments/assets/4c1dc3fd-9bf2-454c-9c41-108bf5414e2a" />
+<img width="377" height="835" alt="En camino" src="https://github.com/user-attachments/assets/6f05ff32-bb4f-4f37-87f8-2eabf1a3d144" />
+<img width="368" height="827" alt="Entregados" src="https://github.com/user-attachments/assets/eebef051-8b26-4f2c-b211-a5750de271ef" />
+<img width="361" height="832" alt="Pendiendes" src="https://github.com/user-attachments/assets/3d7305eb-ee93-413d-a22c-4aee0899b30b" />
 
-### Info Base de datos
-![Sin Pedidos Asignados Para Repartidor Nuevos](screenshots/TablaPedidoSinRegistroNuevo.png)
 
-### Wearable (WearOS)
+### Mobile Admin
+#### Inicio de Sesión
+<img width="367" height="827" alt="image" src="https://github.com/user-attachments/assets/7e0bdd91-73ad-4f65-9808-e1f7768e1ce1" />
+#### Dashboard
+<img width="365" height="827" alt="Dashboard" src="https://github.com/user-attachments/assets/1591024f-d297-48d4-a0f4-879aec2a8fc8" />
+#### Gestión de Usuarios
+<img width="360" height="832" alt="Gestion Usuarios" src="https://github.com/user-attachments/assets/6049d77d-efef-408d-b106-b27b06a6c5c2" />
+<img width="368" height="828" alt="Modificar Usuario" src="https://github.com/user-attachments/assets/25ea53c3-2c87-4884-a4af-0bfe95c8b479" />
+<img width="368" height="828" alt="Modificar Usuario" src="https://github.com/user-attachments/assets/401d6204-1b5b-49e5-8add-272cf66e714f" />
+<img width="371" height="827" alt="Suspender Usuario" src="https://github.com/user-attachments/assets/22e8e846-8d62-4574-a16e-221f259e33be" />
+#### Creación de Pedidos
+<img width="370" height="806" alt="Nuevo Pedido" src="https://github.com/user-attachments/assets/e21210f8-4699-440e-95fd-223a45d7a67a" />
+#### Detalle de Pedidos
+<img width="381" height="821" alt="Detalles Pedidos" src="https://github.com/user-attachments/assets/7a3addb4-e943-4479-b8f9-e81bc5ae1951" />
+#### Editar Pedido
+<img width="386" height="822" alt="Editar Pedido" src="https://github.com/user-attachments/assets/2599e886-b513-45f7-afb8-27178004210e" />
+#### Cancelar Pedido
+<img width="365" height="801" alt="image" src="https://github.com/user-attachments/assets/9d11fc77-a1cb-4aad-8c84-0112c2779d33" />
+#### Rastreo en Mapa
+<img width="362" height="806" alt="image" src="https://github.com/user-attachments/assets/084de811-2d5f-4021-86d7-2b9ea8b6744b" />
 
-![Sin Pedidos Asignados Para Repartidor Wear](screenshots/sinPedidos.png)
+#### Filtros
+<img width="381" height="828" alt="Filtro por Repartidor" src="https://github.com/user-attachments/assets/0357c950-07ac-4093-914b-c99ef8a9ce3c" />
+<img width="366" height="822" alt="Filtro por Status" src="https://github.com/user-attachments/assets/12a6ada5-165b-4ad7-8404-eef1416d559d" />
 
-### App móvil (Mobile Hub)
-![PantallamenuAdmin](screenshots/EnviarPedidosTel.png)
 
-![Pantalla móvil Crear Nuevo Pedido](screenshots/CrearPedido.png) 
+### Wearable
+#### Inicio de Sesión
+<img width="477" height="483" alt="inicio sesion" src="https://github.com/user-attachments/assets/5628f8a7-1bdc-49d2-9cb9-d26d834b4072" />
 
-### Info Base de datos
-![Pedidos capturados en Base de datos](screenshots/tablaPedido2registrosEstatus2.png)
 
-![HistorialEstatusPedidos](screenshots/Estatus1-2.png)
-
-### Wearable (WearOS)
-![Buscar Pedidos Wear](screenshots/clicBuscarPedidos.png)
-
-![Pedido Asignado](screenshots/SolicitudPedidoCatalina0.png)
-
-![Pedido Asignado](screenshots/SolicitudPedidoCatalina.png)
-
-![Iniciar Recorrido del pedido](screenshots/IniciarRecorridoPedido.png)
-
-![Entregar pedido](screenshots/pedidoCuandoEntregas.png)
-
-### Info Base de datos
-![Pedidos capturados en Base de datos entregado](screenshots/tablaPedido2registros.png)
-
-### App móvil nuevo registro
-
-![Pantalla móvil Crear Nuevo Pedido](screenshots/CrearPedido2Movil.png)
-
-### Info Base de datos
-![Pedidos capturados en Base de datos](screenshots/PedidosTabla.png)
-
-### Wearable (WearOS)
-![Pedido](screenshots/InfoPedidoWear.png)
-
-![Pedido Asignado Rechazar/Aceptar](screenshots/AceptarRechazarPedido.png)
-
-![Pedido Camino](screenshots/pedidoenCamino.png)
-### Info Base de datos
-![HistorialEstatusPedidos](screenshots/estatusPedido.png)
-
+### TV 
+#### Estado inicial
+<img width="981" height="560" alt="Dashboard" src="https://github.com/user-attachments/assets/7e1afcab-2f88-46e1-8790-0786a2c8efcb" />
 
