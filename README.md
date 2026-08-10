@@ -1,4 +1,4 @@
-<img width="570" height="512" alt="Cancelado" src="https://github.com/user-attachments/assets/55f7e81f-67f4-40d6-9e98-e08e6f186579" /># DeliveryTrack
+# DeliveryTrack
 
 Plataforma de telemetría y gestión de entregas en tiempo real para repartidores, compuesta por un **wearable (WearOS)**, una **app móvil (Android)** y un **backend** centralizado, sincronizados mediante la Wearable Data Layer API y una API REST.
 
