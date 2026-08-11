@@ -29,7 +29,7 @@ DeliveryTrack está pensado para negocios de comida como la Rosticería "Lindavi
 
 ## Estructura del Proyecto
 
-El proyecto se organiza bajo una arquitectura multi-módulo administrada con Gradle:
+El proyecto se organiza bajo una arquitectura multi-módulo administrada con Gradle. Puedes consultar la configuración de compilación, Gradle Wrapper y catálogo de dependencias globales en la [documentación de la configuración raíz](documentacion/raiz/README.md).
 
 ```text
 DeliveryTrack/
