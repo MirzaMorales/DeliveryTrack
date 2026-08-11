@@ -69,6 +69,7 @@ Desarrollar una plataforma multi-dispositivo que permita a un repartidor gestion
 - Incluye script de inicialización de base de datos con datos de prueba (un repartidor y un pedido pendiente).
 
 ### Smart TV (TV Dashboard)
+*(Ver la [documentación detallada del módulo TV](documentacion/tv/README.md))*
 - Panel logístico centralizado diseñado para pantallas grandes (Smart TV / Leanback).
 - Conexión persistente mediante **WebSockets** para recibir actualizaciones en tiempo real sobre la ubicación de los repartidores y cambios en los pedidos sin recargar la página.
 - Visualización de indicadores clave (KPIs) en tiempo real: Pedidos activos, Entregados hoy, Tiempo promedio de entrega, Incidencias y Repartidores en ruta.
