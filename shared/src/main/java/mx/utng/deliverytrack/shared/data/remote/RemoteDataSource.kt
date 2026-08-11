@@ -5,9 +5,20 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.IOException
 
+/**
+ * Origen de datos remoto para interactuar con la API REST del servidor mediante peticiones HTTP.
+ * 
+ * @property baseUrl URL base del servidor obtenida de la configuración.
+ */
 class RemoteDataSource(private val baseUrl: String = ServerConfig.BASE_URL) {
     private val client = OkHttpClient()
 
+    /**
+     * Realiza una petición GET asíncrona a un endpoint específico.
+     * 
+     * @param endpoint Ruta del recurso que se desea consultar.
+     * @param callback Callback ejecutado al terminar la petición. Retorna un booleano (éxito/fallo) y el cuerpo de la respuesta o mensaje de error.
+     */
     fun get(endpoint: String, callback: (Boolean, String?) -> Unit) {
         val request = Request.Builder()
             .url("$baseUrl$endpoint")
