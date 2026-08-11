@@ -888,7 +888,7 @@ fun WearOrderDetailScreen(
                             modifier = Modifier.fillMaxWidth().height(36.dp).padding(horizontal = 16.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2))
                         ) {
-                            Text("En camino", fontSize = 12.sp, textfile = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                            Text("En camino", fontSize = 12.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                         }
                     }
                     3, 5 -> { // En camino o Retrasado: Entregar
@@ -950,12 +950,25 @@ import mx.utng.deliverytrack.shared.config.ServerConfig
 import org.json.JSONObject
 import kotlin.concurrent.thread
 
+/**
+ * Modelo de datos que almacena los detalles de sesión del repartidor autenticado.
+ *
+ * @property idUser Identificador único del usuario (repartidor) en la base de datos.
+ * @property nombreCompleto Nombre y apellido completo del repartidor.
+ * @property telefono Teléfono de contacto registrado.
+ */
 data class WearCourierSession(
     val idUser: Int,
     val nombreCompleto: String,
     val telefono: String
 )
 
+/**
+ * Función auxiliar para omitir la validación de certificados SSL de la conexión HTTPS.
+ * Útil exclusivamente en entornos de desarrollo local donde el backend utiliza certificados autofirmados.
+ *
+ * @param conn Conexión HTTP sobre la que se aplicará el bypass de seguridad SSL.
+ */
 private fun applySslBypass(conn: java.net.HttpURLConnection) {
     if (conn is javax.net.ssl.HttpsURLConnection) {
         try {
@@ -974,6 +987,15 @@ private fun applySslBypass(conn: java.net.HttpURLConnection) {
     }
 }
 
+/**
+ * Componente Composable que pinta la pantalla de inicio de sesión optimizada para WearOS.
+ *
+ * Presenta campos de entrada adaptados para pantallas circulares pequeñas donde el repartidor
+ * introduce su teléfono y contraseña. Realiza peticiones directas HTTP POST al backend para verificar
+ * las credenciales y asegurar que el usuario tenga el rol de repartidor (rol = 2) asignado.
+ *
+ * @param onLoginSuccess Callback invocado tras un inicio de sesión exitoso, retornando los detalles de la sesión.
+ */
 @Composable
 fun WearLoginScreen(
     onLoginSuccess: (WearCourierSession) -> Unit
@@ -994,6 +1016,7 @@ fun WearLoginScreen(
                 .fillMaxSize()
                 .background(Color(0xFF0F172A))
         ) {
+            // Cabecera con título del sistema
             item {
                 ListHeader(modifier = Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 2.dp)) {
                     Column(
@@ -1021,6 +1044,7 @@ fun WearLoginScreen(
                 Spacer(modifier = Modifier.height(4.dp))
             }
 
+            // Campo de entrada para Teléfono
             item {
                 Column(
                     modifier = Modifier
@@ -1072,6 +1096,7 @@ fun WearLoginScreen(
                 Spacer(modifier = Modifier.height(4.dp))
             }
 
+            // Campo de entrada para Contraseña
             item {
                 Column(
                     modifier = Modifier
@@ -1120,6 +1145,7 @@ fun WearLoginScreen(
                 }
             }
 
+            // Alerta visual en caso de error
             if (errorMessage.isNotEmpty()) {
                 item {
                     Box(
@@ -1144,6 +1170,7 @@ fun WearLoginScreen(
                 Spacer(modifier = Modifier.height(6.dp))
             }
 
+            // Botón de Inicio de Sesión
             item {
                 Button(
                     onClick = {
@@ -1196,8 +1223,8 @@ fun WearLoginScreen(
                                         idUser = userObj.getInt("id_user"),
                                         nombreCompleto = userObj.getString("nombre_completo"),
                                         telefono = userObj.getString("telefono")
-                                     )
-                                     onLoginSuccess(session)
+                                    )
+                                    onLoginSuccess(session)
                                 } else {
                                     val errObj = try { JSONObject(responseText) } catch (e: Exception) { null }
                                     errorMessage = errObj?.optString("error") ?: "Credenciales incorrectas"
@@ -1260,6 +1287,16 @@ import org.json.JSONArray
 import androidx.compose.foundation.shape.RoundedCornerShape
 import kotlin.concurrent.thread
 
+/**
+ * Modelo de datos que representa una entrega individual mapeada para su visualización
+ * en forma de tarjeta en la pantalla del reloj inteligente.
+ *
+ * @property idPedido Identificador único de la entrega.
+ * @property nombreCliente Nombre del cliente receptor.
+ * @property direccion Ubicación o dirección de entrega.
+ * @property descripcion Contenido u observaciones del pedido.
+ * @property estatus Código numérico del estatus actual del pedido.
+ */
 data class WearPedidoCardItem(
     val idPedido: Int,
     val nombreCliente: String,
@@ -1268,6 +1305,11 @@ data class WearPedidoCardItem(
     val estatus: Int
 )
 
+/**
+ * Omitir la validación de la cadena de certificados SSL para llamadas HTTPS en entornos locales de desarrollo.
+ *
+ * @param conn Instancia de conexión HttpURLConnection a la que se aplicará el bypass de SSL.
+ */
 private fun applySslBypass(conn: java.net.HttpURLConnection) {
     if (conn is javax.net.ssl.HttpsURLConnection) {
         try {
@@ -1286,6 +1328,18 @@ private fun applySslBypass(conn: java.net.HttpURLConnection) {
     }
 }
 
+/**
+ * Pantalla que muestra el listado de pedidos activos asignados al repartidor.
+ *
+ * Consume de manera directa los endpoints del backend (`/api/pedidos/repartidor/{courierId}`)
+ * en un hilo secundario y renderiza una lista optimizada con tarjetas de pedidos activos, filtrando
+ * automáticamente aquellos con estatus completado (6) o cancelado (4). Permite además realizar logout.
+ *
+ * @param courierId Identificador único del repartidor.
+ * @param courierName Nombre completo del repartidor a desplegar en la cabecera.
+ * @param onPedidoCardClick Callback invocado cuando el repartidor hace clic sobre una tarjeta de entrega activa.
+ * @param onChangeCourierClick Callback invocado para cerrar la sesión activa del repartidor actual.
+ */
 @Composable
 fun WearPedidosCardsScreen(
     courierId: Int,
@@ -1297,6 +1351,7 @@ fun WearPedidosCardsScreen(
     var isLoading by remember { mutableStateOf(true) }
     var reloadTrigger by remember { mutableIntStateOf(0) }
 
+    // Efecto lanzado al iniciar o ante cambios en courierId o reloadTrigger para refrescar el listado
     LaunchedEffect(courierId, reloadTrigger) {
         isLoading = true
         thread {
@@ -1336,6 +1391,7 @@ fun WearPedidosCardsScreen(
     val listState = rememberTransformingLazyColumnState()
     ScreenScaffold(scrollState = listState) { contentPadding ->
         TransformingLazyColumn(contentPadding = contentPadding, state = listState) {
+            // Cabecera con nombre del repartidor y cantidad de entregas
             item {
                 ListHeader(modifier = Modifier.fillMaxWidth()) {
                     Column {
@@ -1358,6 +1414,7 @@ fun WearPedidosCardsScreen(
                 }
             }
 
+            // Renderizado condicional según estado de carga y disponibilidad de pedidos
             if (isLoading) {
                 item {
                     Text(
@@ -1437,6 +1494,8 @@ fun WearPedidosCardsScreen(
             item {
                 Spacer(modifier = Modifier.height(6.dp))
             }
+            
+            // Botón para cambiar de usuario (Cerrar sesión)
             item {
                 Button(
                     onClick = onChangeCourierClick,
@@ -1470,6 +1529,14 @@ package mx.utng.deliverytrack.wear.presentation.theme
 import androidx.compose.runtime.Composable
 import androidx.wear.compose.material3.MaterialTheme
 
+/**
+ * Tema principal de diseño para la aplicación DeliveryTrack WearOS.
+ *
+ * Configura la paleta de colores, tipografías y formas de Compose Material 3
+ * para adaptarlos al hardware de relojes inteligentes (WearOS).
+ *
+ * @param content El árbol de componentes Composable que se renderizará bajo esta temática.
+ */
 @Composable
 fun DeliveryTrackTheme(
     content: @Composable () -> Unit
