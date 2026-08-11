@@ -11,6 +11,14 @@ import okhttp3.*
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
+/**
+ * Cliente WebSocket encargado de gestionar la comunicación en tiempo real con el servidor para la TV.
+ * 
+ * Abre una conexión persistente, maneja la reconexión exponencial automática
+ * en caso de caídas de red y expone el estado de conexión y los flujos de datos.
+ * 
+ * @property serverUrl Dirección URL de WebSocket del servidor.
+ */
 class TvWebSocketClient(
     private val serverUrl: String = ServerConfig.WS_URL
 ) {
@@ -24,17 +32,33 @@ class TvWebSocketClient(
     private var currentBackoffMs = 1000L
 
     private val _connectionState = MutableStateFlow(false)
+    /**
+     * Flujo que representa si la conexión de WebSocket está abierta (true) o cerrada (false).
+     */
     val connectionState: StateFlow<Boolean> = _connectionState.asStateFlow()
 
     private val _kpis = MutableStateFlow<KpisDto?>(null)
+    /**
+     * Flujo que contiene los indicadores clave de rendimiento (KPIs) en tiempo real.
+     */
     val kpis: StateFlow<KpisDto?> = _kpis.asStateFlow()
 
     private val _pedidos = MutableStateFlow<List<PedidoDto>>(emptyList())
+    /**
+     * Flujo que contiene la lista de pedidos activos monitoreados.
+     */
     val pedidos: StateFlow<List<PedidoDto>> = _pedidos.asStateFlow()
 
     private val _repartidores = MutableStateFlow<Map<Int, RepartidorUbicacionDto>>(emptyMap())
+    /**
+     * Flujo que mapea el ID del repartidor con su ubicación y datos de telemetría más recientes.
+     */
     val repartidores: StateFlow<Map<Int, RepartidorUbicacionDto>> = _repartidores.asStateFlow()
 
+    /**
+     * Inicia el proceso de conexión por WebSocket al servidor.
+     * Si ya se encuentra conectado, la llamada se ignora.
+     */
     fun connect() {
         if (webSocket != null) return
         val request = Request.Builder().url(serverUrl).build()
@@ -218,6 +242,9 @@ class TvWebSocketClient(
         )
     }
 
+    /**
+     * Cierra la conexión activa de WebSocket y detiene cualquier proceso de reconexión.
+     */
     fun disconnect() {
         webSocket?.close(1000, "Goodbye")
         webSocket = null

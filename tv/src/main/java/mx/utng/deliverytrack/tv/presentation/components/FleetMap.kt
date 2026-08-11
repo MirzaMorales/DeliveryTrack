@@ -16,6 +16,16 @@ import com.google.android.gms.maps.model.MarkerOptions
 import mx.utng.deliverytrack.tv.domain.model.PedidoDto
 import mx.utng.deliverytrack.tv.domain.model.RepartidorUbicacionDto
 
+/**
+ * Componente que encapsula la vista de Google Maps para mostrar las ubicaciones en tiempo real de los repartidores.
+ * 
+ * Gestiona el ciclo de vida del mapa, la actualización dinámica de marcadores
+ * basados en eventos de telemetría y el encuadre automático de la cámara para incluir a toda la flota activa.
+ * 
+ * @param repartidores Mapa de repartidores y sus telemetrías/posiciones GPS actuales.
+ * @param pedidos Lista de pedidos activos para realizar validación cruzada y colorear los pines.
+ * @param modifier Modificador de Compose para tamaño y posicionamiento del mapa.
+ */
 @Composable
 fun FleetMap(
     repartidores: Map<Int, RepartidorUbicacionDto>,

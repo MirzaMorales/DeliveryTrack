@@ -17,6 +17,11 @@ import mx.utng.deliverytrack.tv.domain.model.KpisDto
 import mx.utng.deliverytrack.tv.mqtt.TvWebSocketClient
 import mx.utng.deliverytrack.tv.presentation.components.FleetMap
 
+/**
+ * Actividad principal del módulo TV que inicializa y muestra el panel logístico de la Smart TV.
+ * 
+ * Abre la conexión de WebSocket al crearse y la libera al destruirse la actividad.
+ */
 class TvDashboardActivity : ComponentActivity() {
     private lateinit var webSocketClient: TvWebSocketClient
 
@@ -39,6 +44,14 @@ class TvDashboardActivity : ComponentActivity() {
     }
 }
 
+/**
+ * Pantalla principal en Compose para el Dashboard de la TV.
+ * 
+ * Reúne y observa los flujos del WebSocket y pinta la cabecera, indicadores de métricas,
+ * listado de pedidos activos y el mapa logístico de Google Maps.
+ * 
+ * @param client Instancia del cliente de WebSocket del que se consumen los datos en tiempo real.
+ */
 @Composable
 fun TvDashboardScreen(client: TvWebSocketClient) {
     val kpis by client.kpis.collectAsState()
@@ -224,6 +237,14 @@ fun TvDashboardScreen(client: TvWebSocketClient) {
     }
 }
 
+/**
+ * Componente de tarjeta reutilizable para mostrar indicadores métricos individuales.
+ * 
+ * @param title Título descriptivo de la métrica.
+ * @param value Valor numérico o texto a destacar.
+ * @param accentColor Color característico asignado al valor numérico para contraste visual.
+ * @param modifier Modificador para personalizar tamaño, márgenes o peso.
+ */
 @Composable
 fun MetricCard(title: String, value: String, accentColor: Color, modifier: Modifier = Modifier) {
     Card(
