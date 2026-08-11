@@ -47,13 +47,22 @@ import mx.utng.deliverytrack.wear.presentation.theme.DeliveryTrackTheme
 import org.json.JSONObject
 import kotlin.concurrent.thread
 
+/**
+ * Actividad principal del módulo Wear (WearOS).
+ *
+ * Se encarga de la inicialización de la Wearable Data Layer API, coordinar las pantallas
+ * de flujo de usuario (Login, Listado de Pedidos Activos, Detalles del Pedido) y gestionar la
+ * actualización de estados a través de peticiones HTTP directas al backend.
+ */
 class MainActivity : ComponentActivity() {
 
     private lateinit var dataLayerHelper: WearableDataLayerHelper
 
+    // Estados reactivos que controlan la sesión y navegación del reloj
     private var activeCourier by mutableStateOf<WearCourierSession?>(null)
     private var selectedPedido by mutableStateOf<WearPedidoCardItem?>(null)
 
+    // Estados reactivos que representan los datos del pedido en pantalla
     private var activeOrderId by mutableStateOf<Int?>(null)
     private var clientName by mutableStateOf("")
     private var addressText by mutableStateOf("")
@@ -67,15 +76,14 @@ class MainActivity : ComponentActivity() {
         private const val TAG = "WearMainActivity"
     }
 
+    /**
+     * Inicializa la actividad y la lógica de escucha del WearableDataLayerHelper.
+     * Define la interfaz gráfica en Compose bajo el tema general.
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Data Layer helper is kept ONLY for things that are not critical/blocking:
-        // fetching an active order push and receiving haptic alerts from the phone.
-        // Status changes (accept/reject/en camino/entregado) are sent DIRECTLY to the
-        // backend from the watch below, because MessageClient.sendMessage() has no
-        // delivery guarantee (no retry, no queue) when the phone node isn't reachable
-        // at that exact instant — which was silently dropping status updates.
+        // Se inicializa el puente de comunicación local con el dispositivo celular
         dataLayerHelper = WearableDataLayerHelper(
             context = this,
             onActiveOrderResponse = { success, data ->
@@ -94,6 +102,7 @@ class MainActivity : ComponentActivity() {
                     orderStatus = newStatus
                     statusMessage = ""
 
+                    // Si llega un pedido con estatus 'Pendiente' (2), se genera alerta háptica
                     if (oldStatus == null && newStatus == 2) {
                         triggerHapticAlert("nuevo")
                     }
@@ -102,11 +111,7 @@ class MainActivity : ComponentActivity() {
                     statusMessage = ""
                 }
             },
-            onStatusUpdateResponse = { _, _ ->
-                // No longer used: status updates now go direct to the backend
-                // via updateOrderStatusDirect(). Kept as a no-op so old messages
-                // from a stale phone build don't crash anything.
-            },
+            onStatusUpdateResponse = { _, _ -> },
             onHapticAlertReceived = { type ->
                 Log.d(TAG, "Haptic alert notification received: $type")
                 triggerHapticAlert(type)
@@ -123,15 +128,14 @@ class MainActivity : ComponentActivity() {
                     val courier = activeCourier
                     val order = selectedPedido
 
+                    // Enrutamiento local de pantallas mediante variables de estado
                     if (courier == null) {
-                        // 1. Wear Login Screen
                         WearLoginScreen(
                             onLoginSuccess = { session ->
                                 activeCourier = session
                             }
                         )
                     } else if (order == null) {
-                        // 2. Wear Order Cards List Screen
                         WearPedidosCardsScreen(
                             courierId = courier.idUser,
                             courierName = courier.nombreCompleto,
@@ -150,7 +154,6 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     } else {
-                        // 3. Wear Order Detail Screen + Back Button
                         WearOrderDetailScreen(
                             activeOrderId = activeOrderId,
                             clientName = clientName,
@@ -174,15 +177,13 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Sends the status change directly to the backend from the watch,
-     * exactly like WearLoginScreen / WearPedidosCardsScreen already do.
-     * No optimistic UI update: orderStatus only changes once the backend
-     * confirms the change with a 200. On failure, a real error is shown.
+     * Envía la actualización de estado del pedido directamente a la API REST del backend
+     * mediante HTTP PUT en un hilo de ejecución secundario para garantizar su recepción.
+     *
+     * @param newStatus Código numérico del nuevo estatus solicitado (ej: 1 = Aceptado, 3 = En camino, 6 = Entregado).
      */
     private fun updateOrderStatusDirect(newStatus: Int) {
         val id = activeOrderId ?: return
-        val repId = activeCourier?.idUser ?: 2
-
         isLoading = true
         statusMessage = ""
 
@@ -231,6 +232,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Limpia los estados locales de la entrega activa cargada en pantalla.
+     */
     private fun resetOrderState() {
         activeOrderId = null
         clientName = ""
@@ -239,6 +243,12 @@ class MainActivity : ComponentActivity() {
         orderStatus = null
     }
 
+    /**
+     * Genera un patrón de vibración (alerta háptica) en el reloj del repartidor
+     * según el tipo de notificación recibida.
+     *
+     * @param type Tipo de alerta a disparar ("nuevo" para nuevo pedido, o "cancelado").
+     */
     private fun triggerHapticAlert(type: String) {
         val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator ?: return
         val pattern = when (type.lowercase()) {
@@ -256,11 +266,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Registra el callback de escucha de mensajes al iniciar el flujo de la aplicación.
+     */
     override fun onStart() {
         super.onStart()
         dataLayerHelper.registerListener()
     }
 
+    /**
+     * Remueve el callback de escucha de mensajes al pausar o cerrar la aplicación.
+     */
     override fun onStop() {
         super.onStop()
         dataLayerHelper.unregisterListener()
@@ -268,8 +284,9 @@ class MainActivity : ComponentActivity() {
 }
 
 /**
- * Same SSL bypass used across the wear module (WearLoginScreen, WearPedidosCardsScreen)
- * so the watch can talk to the backend directly, without going through the phone.
+ * Función auxiliar para omitir las validaciones de cadenas SSL/TLS para pruebas locales HTTPS en la MainActivity.
+ *
+ * @param conn Instancia de conexión HTTP a la que se le aplicará el bypass.
  */
 private fun applySslBypassWear(conn: java.net.HttpURLConnection) {
     if (conn is javax.net.ssl.HttpsURLConnection) {
@@ -289,6 +306,25 @@ private fun applySslBypassWear(conn: java.net.HttpURLConnection) {
     }
 }
 
+/**
+ * Composable que renderiza la pantalla de detalle de un pedido seleccionado en el WearOS.
+ *
+ * Muestra información clave del pedido (cliente, dirección, notas) y habilita un botón interactivo
+ * contextual de acuerdo al estatus de la entrega, permitiendo cambiar el estatus mediante clics.
+ *
+ * @param activeOrderId Identificador único del pedido actual.
+ * @param clientName Nombre del cliente receptor.
+ * @param addressText Dirección de entrega con referencias.
+ * @param orderDescription Observaciones del pedido.
+ * @param orderStatus Código numérico del estatus del pedido.
+ * @param isLoading Bandera de estado que desactiva botones y muestra spinner al actualizar.
+ * @param statusMessage Mensaje descriptivo de éxito o error al realizar operaciones.
+ * @param onBackToCardsList Callback invocado para regresar al listado general de entregas.
+ * @param onAccept Callback para aceptar la entrega.
+ * @param onReject Callback para rechazar la entrega.
+ * @param onEnCamino Callback para marcar el pedido en camino.
+ * @param onEntregado Callback para confirmar la entrega exitosa del pedido.
+ */
 @Composable
 fun WearOrderDetailScreen(
     activeOrderId: Int?,
@@ -309,6 +345,7 @@ fun WearOrderDetailScreen(
 
     ScreenScaffold(scrollState = listState) { contentPadding ->
         TransformingLazyColumn(contentPadding = contentPadding, state = listState) {
+            // Botón de regresar
             item {
                 Button(
                     onClick = onBackToCardsList,
@@ -329,6 +366,7 @@ fun WearOrderDetailScreen(
                 }
             }
 
+            // Cabecera con ID de pedido
             item {
                 ListHeader(
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec),
@@ -343,6 +381,7 @@ fun WearOrderDetailScreen(
                 }
             }
 
+            // Spinner de carga activa
             if (isLoading) {
                 item {
                     Text(
@@ -354,6 +393,7 @@ fun WearOrderDetailScreen(
                 }
             }
 
+            // Mensajes informativos de estatus
             if (statusMessage.isNotEmpty()) {
                 item {
                     Text(
@@ -366,6 +406,7 @@ fun WearOrderDetailScreen(
                 }
             }
 
+            // Nombre de cliente
             item {
                 Text(
                     text = clientName,
@@ -376,6 +417,7 @@ fun WearOrderDetailScreen(
                 )
             }
 
+            // Ubicación del cliente
             item {
                 Text(
                     text = "📍 $addressText",
@@ -387,6 +429,7 @@ fun WearOrderDetailScreen(
                 )
             }
 
+            // Observaciones del pedido
             if (orderDescription.isNotEmpty()) {
                 item {
                     Text(
@@ -401,9 +444,10 @@ fun WearOrderDetailScreen(
 
             item { Spacer(modifier = Modifier.height(6.dp)) }
 
+            // Fila de botones de acción contextuales según estatus del pedido
             item {
                 when (orderStatus) {
-                    2 -> {
+                    2 -> { // Pendiente: Aceptar o Rechazar
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -426,7 +470,7 @@ fun WearOrderDetailScreen(
                             }
                         }
                     }
-                    1 -> {
+                    1 -> { // Aceptado: Iniciar ruta (En camino)
                         Button(
                             onClick = onEnCamino,
                             enabled = !isLoading,
@@ -436,7 +480,7 @@ fun WearOrderDetailScreen(
                             Text("En camino", fontSize = 12.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                         }
                     }
-                    3, 5 -> {
+                    3, 5 -> { // En camino o Retrasado: Entregar
                         Button(
                             onClick = onEntregado,
                             enabled = !isLoading,
@@ -446,7 +490,7 @@ fun WearOrderDetailScreen(
                             Text("Entregado", fontSize = 12.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                         }
                     }
-                    6 -> {
+                    6 -> { // Entregado: Indicación de completado
                         Text(
                             text = "✓ ¡Entrega completada!",
                             fontSize = 12.sp,

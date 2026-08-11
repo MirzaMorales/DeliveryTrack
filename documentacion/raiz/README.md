@@ -10,9 +10,19 @@ Este documento describe la estructura y configuración global de compilación de
 Este es el archivo de configuración global de Gradle para el proyecto raíz. En un proyecto multi-módulo, su función principal es declarar los plugins compartidos que estarán disponibles para todos los submódulos, pero sin aplicarlos directamente en la raíz (`apply false`).
 
 ```kotlin
+// Archivo de configuración global de Gradle para el proyecto raíz DeliveryTrack.
+// En una arquitectura multi-módulo, este archivo define y carga los plugins de compilación
+// para que estén disponibles en el classpath de todos los módulos del proyecto (mobile, wear, tv, shared),
+// pero sin aplicarlos directamente sobre el proyecto raíz ('apply false').
+
 plugins {
+    // Plugin para compilar aplicaciones Android (módulos mobile, wear y tv)
     alias(libs.plugins.android.application) apply false
+    
+    // Plugin para compilar bibliotecas comunes de Android (módulo shared)
     alias(libs.plugins.android.library) apply false
+    
+    // Plugin para habilitar e integrar Jetpack Compose con el compilador Kotlin
     alias(libs.plugins.kotlin.compose) apply false
 }
 ```
@@ -21,8 +31,10 @@ plugins {
 Define la estructura del proyecto multi-módulo. Configura los repositorios de descarga para los plugins y las dependencias (Google y Maven Central), activa el modo de resolución estricto (`FAIL_ON_PROJECT_REPOS`) y declara explícitamente cuáles son los submódulos que componen la aplicación.
 
 ```kotlin
+// Configuración de los repositorios y gestores de plugins para compilar el proyecto.
 pluginManagement {
     repositories {
+        // Repositorio de Google para descargar los SDKs y plugins oficiales
         google {
             content {
                 includeGroupByRegex("com\\.android.*")
@@ -30,26 +42,34 @@ pluginManagement {
                 includeGroupByRegex("androidx.*")
             }
         }
-        mavenCentral()
-        gradlePluginPortal()
-    }
-}
-plugins {
-    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
-}
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        google()
-        mavenCentral()
+        mavenCentral() // Repositorio central de dependencias Maven
+        gradlePluginPortal() // Repositorio para plugins comunitarios de Gradle
     }
 }
 
+plugins {
+    // Configura convenciones para la resolución y descarga automática del entorno JDK
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
+
+// Configuración de la resolución y descarga de librerías para todos los módulos
+dependencyResolutionManagement {
+    // Exige que todas las dependencias se declaren centralizadamente aquí (evita configuraciones ad-hoc en módulos)
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()       // Repositorio oficial de Google para librerías de Android
+        mavenCentral() // Repositorio central de dependencias de terceros
+    }
+}
+
+// Nombre del proyecto raíz en Gradle
 rootProject.name = "DeliveryTrack"
-include(":mobile")
-include(":wear")
-include(":shared")
-include(":tv")
+
+// Registro y vinculación de cada módulo que compone el proyecto
+include(":mobile") // Módulo de la aplicación móvil para teléfono
+include(":wear")   // Módulo de la aplicación para reloj inteligente WearOS
+include(":shared") // Módulo de librerías y utilidades compartidas
+include(":tv")     // Módulo del panel logístico para Smart TV
 ```
 
 ### `gradle.properties`

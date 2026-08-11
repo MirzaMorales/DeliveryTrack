@@ -16,6 +16,16 @@ import org.json.JSONArray
 import androidx.compose.foundation.shape.RoundedCornerShape
 import kotlin.concurrent.thread
 
+/**
+ * Modelo de datos que representa una entrega individual mapeada para su visualización
+ * en forma de tarjeta en la pantalla del reloj inteligente.
+ *
+ * @property idPedido Identificador único de la entrega.
+ * @property nombreCliente Nombre del cliente receptor.
+ * @property direccion Ubicación o dirección de entrega.
+ * @property descripcion Contenido u observaciones del pedido.
+ * @property estatus Código numérico del estatus actual del pedido.
+ */
 data class WearPedidoCardItem(
     val idPedido: Int,
     val nombreCliente: String,
@@ -24,6 +34,11 @@ data class WearPedidoCardItem(
     val estatus: Int
 )
 
+/**
+ * Omitir la validación de la cadena de certificados SSL para llamadas HTTPS en entornos locales de desarrollo.
+ *
+ * @param conn Instancia de conexión HttpURLConnection a la que se aplicará el bypass de SSL.
+ */
 private fun applySslBypass(conn: java.net.HttpURLConnection) {
     if (conn is javax.net.ssl.HttpsURLConnection) {
         try {
@@ -42,6 +57,18 @@ private fun applySslBypass(conn: java.net.HttpURLConnection) {
     }
 }
 
+/**
+ * Pantalla que muestra el listado de pedidos activos asignados al repartidor.
+ *
+ * Consume de manera directa los endpoints del backend (`/api/pedidos/repartidor/{courierId}`)
+ * en un hilo secundario y renderiza una lista optimizada con tarjetas de pedidos activos, filtrando
+ * automáticamente aquellos con estatus completado (6) o cancelado (4). Permite además realizar logout.
+ *
+ * @param courierId Identificador único del repartidor.
+ * @param courierName Nombre completo del repartidor a desplegar en la cabecera.
+ * @param onPedidoCardClick Callback invocado cuando el repartidor hace clic sobre una tarjeta de entrega activa.
+ * @param onChangeCourierClick Callback invocado para cerrar la sesión activa del repartidor actual.
+ */
 @Composable
 fun WearPedidosCardsScreen(
     courierId: Int,
@@ -53,6 +80,7 @@ fun WearPedidosCardsScreen(
     var isLoading by remember { mutableStateOf(true) }
     var reloadTrigger by remember { mutableIntStateOf(0) }
 
+    // Efecto lanzado al iniciar o ante cambios en courierId o reloadTrigger para refrescar el listado
     LaunchedEffect(courierId, reloadTrigger) {
         isLoading = true
         thread {
@@ -92,6 +120,7 @@ fun WearPedidosCardsScreen(
     val listState = rememberTransformingLazyColumnState()
     ScreenScaffold(scrollState = listState) { contentPadding ->
         TransformingLazyColumn(contentPadding = contentPadding, state = listState) {
+            // Cabecera con nombre del repartidor y cantidad de entregas
             item {
                 ListHeader(modifier = Modifier.fillMaxWidth()) {
                     Column {
@@ -114,6 +143,7 @@ fun WearPedidosCardsScreen(
                 }
             }
 
+            // Renderizado condicional según estado de carga y disponibilidad de pedidos
             if (isLoading) {
                 item {
                     Text(
@@ -193,6 +223,8 @@ fun WearPedidosCardsScreen(
             item {
                 Spacer(modifier = Modifier.height(6.dp))
             }
+            
+            // Botón para cambiar de usuario (Cerrar sesión)
             item {
                 Button(
                     onClick = onChangeCourierClick,

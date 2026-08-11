@@ -145,6 +145,17 @@ package mx.utng.deliverytrack.wear.mqtt
 
 import mx.utng.deliverytrack.shared.mqtt.MqttClientHelper
 
+/**
+ * Gestor de conexión MQTT para el módulo WearOS.
+ *
+ * Esta clase se encarga de abrir una conexión persistente a un broker MQTT
+ * y suscribir al repartidor a su canal específico de notificaciones para recibir
+ * alertas hápticas y actualizaciones críticas desde la central lograda mediante HiveMQ.
+ *
+ * @property serverUri Dirección del servidor broker MQTT (soporta conexiones seguras ssl://).
+ * @property username Nombre de usuario para la autenticación en el broker.
+ * @property password Contraseña para la autenticación en el broker.
+ */
 class WearMqttManager(
     private val serverUri: String = "ssl://79a94522998842728c5ef7bf42fd3c30.s1.eu.hivemq.cloud:8883",
     private val username: String = "smarthealthmonitor",
@@ -152,17 +163,32 @@ class WearMqttManager(
 ) {
     private var mqttClientHelper: MqttClientHelper? = null
 
+    /**
+     * Establece la conexión con el broker MQTT utilizando un ID de cliente único.
+     *
+     * @param clientId Identificador único para el cliente MQTT en esta sesión.
+     * @param onConnected Función callback que se ejecuta al establecerse la conexión con éxito.
+     */
     fun connect(clientId: String, onConnected: () -> Unit) {
         mqttClientHelper = MqttClientHelper(serverUri, clientId, username, password)
         mqttClientHelper?.connect(onConnected) { _ -> }
     }
 
+    /**
+     * Suscribe al cliente al canal específico de alertas del repartidor actual.
+     *
+     * @param courierId Identificador único del repartidor.
+     * @param onAlertReceived Función callback que se ejecuta cuando se recibe una alerta en formato JSON o texto.
+     */
     fun subscribeToCourierTopic(courierId: Int, onAlertReceived: (String) -> Unit) {
         mqttClientHelper?.subscribe("deliverytrack/courier/$courierId/alerts") { _, message ->
             onAlertReceived(message)
         }
     }
 
+    /**
+     * Desconecta el cliente MQTT activo y libera los recursos.
+     */
     fun disconnect() {
         mqttClientHelper?.disconnect()
     }
@@ -189,6 +215,18 @@ import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Wearable
 import org.json.JSONObject
 
+/**
+ * Clase de soporte para la API de Google Play Services Wearable Data Layer.
+ *
+ * Facilita la comunicación bidireccional mediante Bluetooth/WiFi entre el reloj inteligente
+ * (WearOS) y el teléfono móvil vinculado (Mobile Hub), actuando este último como puente
+ * de red hacia el servidor backend central.
+ *
+ * @property context Contexto de la aplicación Android.
+ * @property onActiveOrderResponse Callback invocado al recibir los datos de la orden activa del repartidor.
+ * @property onStatusUpdateResponse Callback invocado tras enviar una actualización de estado del pedido.
+ * @property onHapticAlertReceived Callback invocado al recibir una alerta háptica del teléfono (ej. nuevo pedido o cancelación).
+ */
 class WearableDataLayerHelper(
     private val context: Context,
     private val onActiveOrderResponse: (success: Boolean, responseJson: JSONObject?) -> Unit,
@@ -198,6 +236,8 @@ class WearableDataLayerHelper(
 
     companion object {
         private const val TAG = "WearDataHelper"
+        
+        // Rutas de comunicación de datos de la API Data Layer
         private const val PATH_GET_ACTIVE = "/pedido/activo/get"
         private const val PATH_RESPONSE_ACTIVE = "/pedido/activo/response"
         private const val PATH_UPDATE_STATUS = "/pedido/status/update"
@@ -208,16 +248,28 @@ class WearableDataLayerHelper(
     private val messageClient = Wearable.getMessageClient(context)
     private val nodeClient = Wearable.getNodeClient(context)
 
+    /**
+     * Registra esta clase como receptor de mensajes entrantes de la Wearable Data Layer API.
+     */
     fun registerListener() {
         messageClient.addListener(this)
         Log.d(TAG, "Message received listener registered")
     }
 
+    /**
+     * Remueve el registro de esta clase para dejar de recibir mensajes de la Wearable Data Layer API.
+     */
     fun unregisterListener() {
         messageClient.removeListener(this)
         Log.d(TAG, "Message received listener unregistered")
     }
 
+    /**
+     * Recibe y procesa los mensajes entrantes de la Wearable Data Layer API enviados por el teléfono móvil.
+     * Clasifica los payloads según la ruta asignada.
+     *
+     * @param event Evento de mensaje recibido que contiene la ruta y el payload en bytes.
+     */
     override fun onMessageReceived(event: MessageEvent) {
         val path = event.path
         val payload = String(event.data, Charsets.UTF_8)
@@ -246,11 +298,23 @@ class WearableDataLayerHelper(
         }
     }
 
+    /**
+     * Envía una solicitud al teléfono móvil para obtener el pedido activo actual asignado al repartidor.
+     *
+     * @param repartidorId Identificador único del repartidor.
+     */
     fun requestActiveOrder(repartidorId: Int) {
         Log.d(TAG, "Requesting active order for courier: $repartidorId")
         sendToConnectedNodes(PATH_GET_ACTIVE, repartidorId.toString())
     }
 
+    /**
+     * Envía una solicitud de actualización del estado de un pedido al teléfono móvil.
+     *
+     * @param orderId Identificador único del pedido.
+     * @param estatus Código numérico del nuevo estatus solicitado.
+     * @param repartidorId Identificador único del repartidor encargado.
+     */
     fun requestStatusUpdate(orderId: Int, estatus: Int, repartidorId: Int) {
         Log.d(TAG, "Requesting status update for order: $orderId to: $estatus")
         val payload = JSONObject().apply {
@@ -262,6 +326,12 @@ class WearableDataLayerHelper(
         sendToConnectedNodes(PATH_UPDATE_STATUS, payload)
     }
 
+    /**
+     * Transmite un mensaje en bytes a todos los dispositivos móviles (nodos) conectados al reloj.
+     *
+     * @param path Ruta semántica del mensaje.
+     * @param payload Datos del mensaje formateados como String.
+     */
     private fun sendToConnectedNodes(path: String, payload: String) {
         nodeClient.connectedNodes
             .addOnSuccessListener { nodes ->
@@ -295,6 +365,13 @@ Los datos consumidos por la aplicación se estructuran principalmente en torno a
 ### `WearCourierSession` (Definido en `auth/WearLoginScreen.kt`)
 Modelo de datos que almacena el estado de sesión activa del repartidor tras autenticarse con éxito en el servidor.
 ```kotlin
+/**
+ * Modelo de datos que almacena los detalles de sesión del repartidor autenticado.
+ *
+ * @property idUser Identificador único del usuario (repartidor) en la base de datos.
+ * @property nombreCompleto Nombre y apellido completo del repartidor.
+ * @property telefono Teléfono de contacto registrado.
+ */
 data class WearCourierSession(
     val idUser: Int,
     val nombreCompleto: String,
@@ -305,6 +382,16 @@ data class WearCourierSession(
 ### `WearPedidoCardItem` (Definido en `pedidos/WearPedidosCardsScreen.kt`)
 Clase de datos utilizada para mapear los elementos individuales del listado de entregas activas asignadas al repartidor.
 ```kotlin
+/**
+ * Modelo de datos que representa una entrega individual mapeada para su visualización
+ * en forma de tarjeta en la pantalla del reloj inteligente.
+ *
+ * @property idPedido Identificador único de la entrega.
+ * @property nombreCliente Nombre del cliente receptor.
+ * @property direccion Ubicación o dirección de entrega.
+ * @property descripcion Contenido u observaciones del pedido.
+ * @property estatus Código numérico del estatus actual del pedido.
+ */
 data class WearPedidoCardItem(
     val idPedido: Int,
     val nombreCliente: String,
@@ -371,13 +458,22 @@ import mx.utng.deliverytrack.wear.presentation.theme.DeliveryTrackTheme
 import org.json.JSONObject
 import kotlin.concurrent.thread
 
+/**
+ * Actividad principal del módulo Wear (WearOS).
+ *
+ * Se encarga de la inicialización de la Wearable Data Layer API, coordinar las pantallas
+ * de flujo de usuario (Login, Listado de Pedidos Activos, Detalles del Pedido) y gestionar la
+ * actualización de estados a través de peticiones HTTP directas al backend.
+ */
 class MainActivity : ComponentActivity() {
 
     private lateinit var dataLayerHelper: WearableDataLayerHelper
 
+    // Estados reactivos que controlan la sesión y navegación del reloj
     private var activeCourier by mutableStateOf<WearCourierSession?>(null)
     private var selectedPedido by mutableStateOf<WearPedidoCardItem?>(null)
 
+    // Estados reactivos que representan los datos del pedido en pantalla
     private var activeOrderId by mutableStateOf<Int?>(null)
     private var clientName by mutableStateOf("")
     private var addressText by mutableStateOf("")
@@ -391,9 +487,14 @@ class MainActivity : ComponentActivity() {
         private const val TAG = "WearMainActivity"
     }
 
+    /**
+     * Inicializa la actividad y la lógica de escucha del WearableDataLayerHelper.
+     * Define la interfaz gráfica en Compose bajo el tema general.
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Se inicializa el puente de comunicación local con el dispositivo celular
         dataLayerHelper = WearableDataLayerHelper(
             context = this,
             onActiveOrderResponse = { success, data ->
@@ -412,6 +513,7 @@ class MainActivity : ComponentActivity() {
                     orderStatus = newStatus
                     statusMessage = ""
 
+                    // Si llega un pedido con estatus 'Pendiente' (2), se genera alerta háptica
                     if (oldStatus == null && newStatus == 2) {
                         triggerHapticAlert("nuevo")
                     }
@@ -437,6 +539,7 @@ class MainActivity : ComponentActivity() {
                     val courier = activeCourier
                     val order = selectedPedido
 
+                    // Enrutamiento local de pantallas mediante variables de estado
                     if (courier == null) {
                         WearLoginScreen(
                             onLoginSuccess = { session ->
@@ -484,6 +587,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Envía la actualización de estado del pedido directamente a la API REST del backend
+     * mediante HTTP PUT en un hilo de ejecución secundario para garantizar su recepción.
+     *
+     * @param newStatus Código numérico del nuevo estatus solicitado (ej: 1 = Aceptado, 3 = En camino, 6 = Entregado).
+     */
     private fun updateOrderStatusDirect(newStatus: Int) {
         val id = activeOrderId ?: return
         isLoading = true
@@ -534,6 +643,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Limpia los estados locales de la entrega activa cargada en pantalla.
+     */
     private fun resetOrderState() {
         activeOrderId = null
         clientName = ""
@@ -542,6 +654,12 @@ class MainActivity : ComponentActivity() {
         orderStatus = null
     }
 
+    /**
+     * Genera un patrón de vibración (alerta háptica) en el reloj del repartidor
+     * según el tipo de notificación recibida.
+     *
+     * @param type Tipo de alerta a disparar ("nuevo" para nuevo pedido, o "cancelado").
+     */
     private fun triggerHapticAlert(type: String) {
         val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator ?: return
         val pattern = when (type.lowercase()) {
@@ -559,17 +677,28 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Registra el callback de escucha de mensajes al iniciar el flujo de la aplicación.
+     */
     override fun onStart() {
         super.onStart()
         dataLayerHelper.registerListener()
     }
 
+    /**
+     * Remueve el callback de escucha de mensajes al pausar o cerrar la aplicación.
+     */
     override fun onStop() {
         super.onStop()
         dataLayerHelper.unregisterListener()
     }
 }
 
+/**
+ * Función auxiliar para omitir las validaciones de cadenas SSL/TLS para pruebas locales HTTPS en la MainActivity.
+ *
+ * @param conn Instancia de conexión HTTP a la que se le aplicará el bypass.
+ */
 private fun applySslBypassWear(conn: java.net.HttpURLConnection) {
     if (conn is javax.net.ssl.HttpsURLConnection) {
         try {
@@ -588,6 +717,25 @@ private fun applySslBypassWear(conn: java.net.HttpURLConnection) {
     }
 }
 
+/**
+ * Composable que renderiza la pantalla de detalle de un pedido seleccionado en el WearOS.
+ *
+ * Muestra información clave del pedido (cliente, dirección, notas) y habilita un botón interactivo
+ * contextual de acuerdo al estatus de la entrega, permitiendo cambiar el estatus mediante clics.
+ *
+ * @param activeOrderId Identificador único del pedido actual.
+ * @param clientName Nombre del cliente receptor.
+ * @param addressText Dirección de entrega con referencias.
+ * @param orderDescription Observaciones del pedido.
+ * @param orderStatus Código numérico del estatus del pedido.
+ * @param isLoading Bandera de estado que desactiva botones y muestra spinner al actualizar.
+ * @param statusMessage Mensaje descriptivo de éxito o error al realizar operaciones.
+ * @param onBackToCardsList Callback invocado para regresar al listado general de entregas.
+ * @param onAccept Callback para aceptar la entrega.
+ * @param onReject Callback para rechazar la entrega.
+ * @param onEnCamino Callback para marcar el pedido en camino.
+ * @param onEntregado Callback para confirmar la entrega exitosa del pedido.
+ */
 @Composable
 fun WearOrderDetailScreen(
     activeOrderId: Int?,
@@ -608,6 +756,7 @@ fun WearOrderDetailScreen(
 
     ScreenScaffold(scrollState = listState) { contentPadding ->
         TransformingLazyColumn(contentPadding = contentPadding, state = listState) {
+            // Botón de regresar
             item {
                 Button(
                     onClick = onBackToCardsList,
@@ -628,6 +777,7 @@ fun WearOrderDetailScreen(
                 }
             }
 
+            // Cabecera con ID de pedido
             item {
                 ListHeader(
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec),
@@ -642,6 +792,7 @@ fun WearOrderDetailScreen(
                 }
             }
 
+            // Spinner de carga activa
             if (isLoading) {
                 item {
                     Text(
@@ -653,6 +804,7 @@ fun WearOrderDetailScreen(
                 }
             }
 
+            // Mensajes informativos de estatus
             if (statusMessage.isNotEmpty()) {
                 item {
                     Text(
@@ -665,6 +817,7 @@ fun WearOrderDetailScreen(
                 }
             }
 
+            // Nombre de cliente
             item {
                 Text(
                     text = clientName,
@@ -675,6 +828,7 @@ fun WearOrderDetailScreen(
                 )
             }
 
+            // Ubicación del cliente
             item {
                 Text(
                     text = "📍 $addressText",
@@ -686,6 +840,7 @@ fun WearOrderDetailScreen(
                 )
             }
 
+            // Observaciones del pedido
             if (orderDescription.isNotEmpty()) {
                 item {
                     Text(
@@ -700,9 +855,10 @@ fun WearOrderDetailScreen(
 
             item { Spacer(modifier = Modifier.height(6.dp)) }
 
+            // Fila de botones de acción contextuales según estatus del pedido
             item {
                 when (orderStatus) {
-                    2 -> {
+                    2 -> { // Pendiente: Aceptar o Rechazar
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -725,17 +881,17 @@ fun WearOrderDetailScreen(
                             }
                         }
                     }
-                    1 -> {
+                    1 -> { // Aceptado: Iniciar ruta (En camino)
                         Button(
                             onClick = onEnCamino,
                             enabled = !isLoading,
                             modifier = Modifier.fillMaxWidth().height(36.dp).padding(horizontal = 16.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2))
                         ) {
-                            Text("En camino", fontSize = 12.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                            Text("En camino", fontSize = 12.sp, textfile = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                         }
                     }
-                    3, 5 -> {
+                    3, 5 -> { // En camino o Retrasado: Entregar
                         Button(
                             onClick = onEntregado,
                             enabled = !isLoading,
@@ -745,7 +901,7 @@ fun WearOrderDetailScreen(
                             Text("Entregado", fontSize = 12.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                         }
                     }
-                    6 -> {
+                    6 -> { // Entregado: Indicación de completado
                         Text(
                             text = "✓ ¡Entrega completada!",
                             fontSize = 12.sp,

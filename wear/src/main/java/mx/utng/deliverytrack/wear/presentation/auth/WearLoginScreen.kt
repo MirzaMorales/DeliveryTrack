@@ -26,12 +26,25 @@ import mx.utng.deliverytrack.shared.config.ServerConfig
 import org.json.JSONObject
 import kotlin.concurrent.thread
 
+/**
+ * Modelo de datos que almacena los detalles de sesión del repartidor autenticado.
+ *
+ * @property idUser Identificador único del usuario (repartidor) en la base de datos.
+ * @property nombreCompleto Nombre y apellido completo del repartidor.
+ * @property telefono Teléfono de contacto registrado.
+ */
 data class WearCourierSession(
     val idUser: Int,
     val nombreCompleto: String,
     val telefono: String
 )
 
+/**
+ * Función auxiliar para omitir la validación de certificados SSL de la conexión HTTPS.
+ * Útil exclusivamente en entornos de desarrollo local donde el backend utiliza certificados autofirmados.
+ *
+ * @param conn Conexión HTTP sobre la que se aplicará el bypass de seguridad SSL.
+ */
 private fun applySslBypass(conn: java.net.HttpURLConnection) {
     if (conn is javax.net.ssl.HttpsURLConnection) {
         try {
@@ -50,6 +63,15 @@ private fun applySslBypass(conn: java.net.HttpURLConnection) {
     }
 }
 
+/**
+ * Componente Composable que pinta la pantalla de inicio de sesión optimizada para WearOS.
+ *
+ * Presenta campos de entrada adaptados para pantallas circulares pequeñas donde el repartidor
+ * introduce su teléfono y contraseña. Realiza peticiones directas HTTP POST al backend para verificar
+ * las credenciales y asegurar que el usuario tenga el rol de repartidor (rol = 2) asignado.
+ *
+ * @param onLoginSuccess Callback invocado tras un inicio de sesión exitoso, retornando los detalles de la sesión.
+ */
 @Composable
 fun WearLoginScreen(
     onLoginSuccess: (WearCourierSession) -> Unit
@@ -70,7 +92,7 @@ fun WearLoginScreen(
                 .fillMaxSize()
                 .background(Color(0xFF0F172A))
         ) {
-            // Header with top spacing to avoid watch clock collision
+            // Cabecera con título del sistema
             item {
                 ListHeader(modifier = Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 2.dp)) {
                     Column(
@@ -98,7 +120,7 @@ fun WearLoginScreen(
                 Spacer(modifier = Modifier.height(4.dp))
             }
 
-            // Teléfono Field
+            // Campo de entrada para Teléfono
             item {
                 Column(
                     modifier = Modifier
@@ -150,7 +172,7 @@ fun WearLoginScreen(
                 Spacer(modifier = Modifier.height(4.dp))
             }
 
-            // Contraseña Field
+            // Campo de entrada para Contraseña
             item {
                 Column(
                     modifier = Modifier
@@ -199,6 +221,7 @@ fun WearLoginScreen(
                 }
             }
 
+            // Alerta visual en caso de error
             if (errorMessage.isNotEmpty()) {
                 item {
                     Box(
@@ -223,6 +246,7 @@ fun WearLoginScreen(
                 Spacer(modifier = Modifier.height(6.dp))
             }
 
+            // Botón de Inicio de Sesión
             item {
                 Button(
                     onClick = {
@@ -243,7 +267,7 @@ fun WearLoginScreen(
 
                                 val url = java.net.URL("${ServerConfig.BASE_URL}/api/auth/login")
                                 val conn = url.openConnection() as java.net.HttpURLConnection
-                                applySslBypass(conn) // Fix SSL Chain validation failed on Wear OS
+                                applySslBypass(conn)
 
                                 conn.requestMethod = "POST"
                                 conn.setRequestProperty("Content-Type", "application/json")
