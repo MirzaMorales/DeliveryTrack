@@ -4,13 +4,13 @@ El módulo `mobile` es la aplicación móvil principal del sistema DeliveryTrack
 
 La interfaz de usuario está construida en su totalidad utilizando **Jetpack Compose** y **Material Design 3**, siguiendo patrones modernos de arquitectura en Android.
 
-A continuación, se detalla la estructura organizada por carpetas, con la explicación completa y el código fuente comentado de cada archivo del módulo.
+A continuación, se detalla la estructura organizada por carpetas, con la explicación completa, la firma de funciones con sus parámetros (`@param`), comentarios detallados línea por línea dentro de cada bloque de código, sobre variables, expresiones, ramas condicionales, llamadas a APIs, parámetros de llamadas y valores de retorno (`@return`).
 
 ---
 
-## 1. Configuración del Módulo y Manifest (`mobile/`)
+## 1. Configuración del Módulo, Manifest y Red (`mobile/`)
 
-Esta sección contiene los archivos raíz de configuración del módulo móvil, donde se definen las dependencias del proyecto, plugins de compilación, niveles de SDK compatibles y la declaración de componentes del sistema Android (actividades, servicios y permisos).
+Esta sección contiene los archivos raíz de configuración del módulo móvil, donde se definen las dependencias del proyecto, plugins de compilación, niveles de SDK compatibles, permisos de sistema y configuraciones de seguridad de red.
 
 ---
 
@@ -18,66 +18,107 @@ Esta sección contiene los archivos raíz de configuración del módulo móvil, 
 **Funcionalidad:** Archivo de configuración de Gradle para el módulo móvil. Configura la aplicación como un ejecutable Android (`android.application`), habilita el compilador de Jetpack Compose, establece la compatibilidad con Java 11 y declara las dependencias esenciales como `:shared` (módulo común), Play Services Wearable (para comunicación con Wear OS), OkHttp3 (para llamadas HTTP REST) y Jetpack Compose BOM.
 
 ```kotlin
+// Importación de plugins requeridos para compilar la aplicación Android y habilitar soporte de Kotlin Compose
 plugins {
+    // Plugin principal para aplicaciones Android ejecutables
     alias(libs.plugins.android.application)
+    // Plugin de compilación de lenguaje Kotlin para Android
     kotlin("android")
+    // Plugin de soporte para el compilador de Jetpack Compose
     alias(libs.plugins.kotlin.compose)
 }
 
+// Bloque principal de configuración de compilación de Android SDK
 android {
+    // Especificación del espacio de nombres de paquetes único para el módulo móvil
     namespace = "mx.utng.deliverytrack.mobile"
-    compileSdk = 36 // Nivel de SDK compilado objetivo (Android 14/15)
+    
+    // Nivel de SDK compilado objetivo (Android 14/15 - API 36)
+    compileSdk = 36
 
+    // Configuración predeterminada de empaquetado para el archivo APK resultante
     defaultConfig {
+        // Identificador único de aplicación en el sistema operativo Android
         applicationId = "mx.utng.deliverytrack"
-        minSdk = 26 // Compatible desde Android 8.0 (Oreo)
+        
+        // Nivel mínimo de SDK compatible: Android 8.0 (Oreo) - API 26
+        minSdk = 26
+        
+        // Nivel de SDK objetivo de ejecución (API 36)
         targetSdk = 36
+        
+        // Código numérico incremental de versión del APK
         versionCode = 1
+        
+        // Nombre visible de versión de la aplicación móvil
         versionName = "1.0"
     }
 
+    // Definición de tipos de compilación del proyecto (Release vs Debug)
     buildTypes {
+        // Configuración para la versión de distribución (Release)
         release {
+            // Deshabilitar ofuscación y minificación de código ProGuard para facilitar depuración en pruebas
             isMinifyEnabled = false
+            
+            // Especificación de archivos de reglas de optimización de ProGuard
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                getDefaultProguardFile("proguard-android-optimize.txt"), // Reglas por defecto de Android
+                "proguard-rules.pro" // Reglas personalizadas del proyecto
             )
         }
     }
+    
+    // Opciones de compatibilidad del compilador Java
     compileOptions {
-        // Compatibilidad de bytecode Java 11
+        // Establecer compatibilidad del código fuente con Java 11
         sourceCompatibility = JavaVersion.VERSION_11
+        // Establecer compatibilidad de bytecode generado con Java 11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+    
+    // Habilitar características especiales de compilación de Android
+    buildFeatures {
+        // Activar el motor de UI reactiva Jetpack Compose
+        compose = true
     }
 }
 
+// Configuración adicional del compilador de Kotlin
 kotlin {
     compilerOptions {
+        // Definir la versión JVM de salida para las clases compiladas de Kotlin
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
     }
 }
 
+// Declaración de dependencias externas e internas del módulo móvil
 dependencies {
-    // Importación del módulo compartido central
+    // Importación del módulo compartido central (:shared) que contiene configuraciones y helpers comunes
     implementation(project(":shared"))
     
-    // Servicios de comunicación con Wear OS (Google Play Services)
+    // Librería Google Play Services Wearable para habilitar sincronización con relojes Wear OS
     implementation(libs.play.services.wearable)
     
-    // Cliente HTTP asíncrono OkHttp3
+    // Cliente HTTP asíncrono OkHttp3 para realizar peticiones REST a la API backend
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     
-    // Core Android & Jetpack Compose BOM
+    // Importación del BOM (Bill of Materials) de Jetpack Compose para alineación de versiones UI
     implementation(platform(libs.compose.bom))
+    // Soporte para integración de Compose en ComponentActivity
     implementation(libs.activity.compose)
+    // Núcleo de componentes visuales de Jetpack Compose
     implementation(libs.ui)
+    // Utilerías gráficas, vectores y colores para Compose
     implementation(libs.ui.graphics)
+    // Herramientas de vista previa en tiempo real para el IDE Android Studio
     implementation(libs.ui.tooling.preview)
     
-    // Librerías de componentes UI Material 3 para teléfonos/tabletas
+    // Librería Foundation de Compose para gestos, listas y contenedores
     implementation("androidx.compose.foundation:foundation")
+    // Distribución de layouts (Box, Column, Row, Spacer, etc.)
     implementation("androidx.compose.foundation:foundation-layout")
+    // Componentes de diseño Material Design 3 (Button, Card, Scaffold, TopAppBar, Text, etc.)
     implementation("androidx.compose.material3:material3")
 }
 ```
@@ -89,55 +130,59 @@ dependencies {
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Declaración del manifiesto principal del módulo de aplicación móvil Android -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Permiso esencial para comunicación HTTP REST, WebSockets y MQTT -->
+    <!-- Permiso obligatorio del sistema para autorizar conexiones de red HTTP REST, WebSockets y MQTT -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Configuración global del contenedor de la aplicación Android -->
     <application
-        android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:label="DeliveryTrack"
-        android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar"
-        android:networkSecurityConfig="@xml/network_security_config">
+        android:allowBackup="true" <!-- Permitir respaldos de datos de la app en cuenta de Google -->
+        android:icon="@mipmap/ic_launcher" <!-- Icono predeterminado de la aplicación -->
+        android:roundIcon="@mipmap/ic_launcher_round" <!-- Icono redondeado para launchers compatibles -->
+        android:label="DeliveryTrack" <!-- Nombre visible de la app en la pantalla de inicio del teléfono -->
+        android:supportsRtl="true" <!-- Soporte para la disposición de texto Right-To-Left -->
+        android:theme="@android:style/Theme.Material.Light.NoActionBar" <!-- Tema visual claro sin barra superior antigua -->
+        android:networkSecurityConfig="@xml/network_security_config"> <!-- Referencia al archivo de configuración de seguridad de red -->
         
-        <!-- Actividad Principal (Punto de Entrada de la Aplicación) -->
+        <!-- Registro de la Actividad Principal (Punto de entrada de la aplicación) -->
         <activity
-            android:name=".ui.MainActivity"
-            android:exported="true">
+            android:name=".ui.MainActivity" <!-- Clase Java/Kotlin de la actividad -->
+            android:exported="true"> <!-- Exportada a true para permitir su lanzamiento desde el Launcher de Android -->
             <intent-filter>
+                <!-- Definición del Intent Filter para declarar como actividad de inicio principal -->
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <!-- Formulario de Creación y Edición de Pedidos -->
+        <!-- Registro de la Actividad de Formulario para Crear/Editar Pedidos -->
         <activity
             android:name=".ui.NuevoPedidoActivity"
-            android:exported="false" />
+            android:exported="false" /> <!-- Uso interno, no ejecutable por otras apps externas -->
 
-        <!-- Panel de Administración de Usuarios del Sistema -->
+        <!-- Registro de la Actividad para Administración de Usuarios y Repartidores -->
         <activity
             android:name=".ui.admin.GestionUsuariosActivity"
-            android:exported="false" />
+            android:exported="false" /> <!-- Uso interno reservado para el Administrador -->
 
-        <!-- Vista de Detalle y Seguimiento de Pedidos para Administradores -->
+        <!-- Registro de la Actividad de Detalle de Pedidos para el Administrador -->
         <activity
             android:name=".ui.admin.AdminDetallePedidoActivity"
-            android:exported="false" />
+            android:exported="false" /> <!-- Vista interna del Administrador -->
 
-        <!-- Vista de Detalle y Actualización de Estatus para Repartidores -->
+        <!-- Registro de la Actividad de Detalle y Estatus para el Repartidor -->
         <activity
             android:name=".ui.repartidor.DetallePedidoRepartidorActivity"
-            android:exported="false" />
+            android:exported="false" /> <!-- Vista interna del Repartidor -->
 
-        <!-- Servicio en Segundo Plano para Sincronización con Wear OS -->
+        <!-- Registro del Servicio de escucha en segundo plano para sincronización con Wear OS -->
         <service
             android:name=".data.sync.MobileWearableListenerService"
-            android:exported="true">
+            android:exported="true"> <!-- Exportado a true para permitir recibir mensajes de Google Play Services -->
             <intent-filter>
+                <!-- Intent filter de Google Play Services para enlace con la app del smartwatch -->
                 <action android:name="com.google.android.gms.wearable.BIND_LISTENER" />
             </intent-filter>
         </service>
@@ -145,6 +190,25 @@ dependencies {
     </application>
 
 </manifest>
+```
+
+---
+
+### `mobile/src/main/res/xml/network_security_config.xml`
+**Funcionalidad:** Archivo de configuración de seguridad de red en Android. Permite el tráfico HTTP no cifrado (`cleartextTrafficPermitted="true"`) específicamente para los nombres de dominio de desarrollo local y depuración en emuladores Android (`10.0.2.2` y `localhost`).
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Configuración de excepciones de seguridad HTTP para entornos locales de depuración -->
+<network-security-config>
+    <!-- Declaración de políticas específicas para dominios en desarrollo -->
+    <domain-config cleartextTrafficPermitted="true"> <!-- Habilitar tráfico HTTP en texto plano -->
+        <!-- Dirección IP virtual usada por el emulador Android para conectar con el localhost de la máquina host -->
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <!-- Dominio de loopback local para pruebas internas -->
+        <domain includeSubdomains="true">localhost</domain>
+    </domain-config>
+</network-security-config>
 ```
 
 ---
@@ -162,26 +226,26 @@ Esta carpeta almacena las clases de datos (`data class`) de Kotlin que represent
 package mx.utng.deliverytrack.mobile.data.models
 
 /**
- * Entidad de datos que representa un pedido en la plataforma móvil.
+ * Entidad de datos inmutable que representa un Pedido dentro del sistema móvil DeliveryTrack.
  *
- * @property id Identificador único del pedido en la base de datos central.
- * @property nombreCliente Nombre completo del cliente que realiza la compra.
- * @property telefono Teléfono de contacto directo del cliente.
- * @property direccion Dirección física de entrega.
- * @property referenciaLugar Indicaciones extra o referencias del domicilio.
- * @property descripcionPedido Detalle de los artículos o productos a entregar.
- * @property idRepartidor Identificador del repartidor asignado.
- * @property estatus Código numérico del estado del pedido.
+ * @property id Identificador único entero del pedido generado por la base de datos PostgreSQL.
+ * @property nombreCliente Nombre completo del cliente que recibirá el paquete.
+ * @property telefono Número de teléfono de contacto directo con el cliente.
+ * @property direccion Dirección física de entrega del pedido.
+ * @property referenciaLugar Indicaciones o referencias visuales adicionales del domicilio de entrega.
+ * @property descripcionPedido Detalle de los artículos o mercancía contenidos en la orden.
+ * @property idRepartidor Identificador de usuario del repartidor asignado para efectuar la entrega.
+ * @property estatus Código numérico correspondiente al estado actual del pedido (1: Aceptado, 2: Pendiente, 3: En camino, 4: Cancelado, 5: Retrasado, 6: Entregado).
  */
 data class Pedido(
-    val id: Int,
-    val nombreCliente: String,
-    val telefono: String,
-    val direccion: String,
-    val referenciaLugar: String,
-    val descripcionPedido: String,
-    val idRepartidor: Int,
-    val estatus: Int
+    val id: Int,                   // ID único del pedido (PK)
+    val nombreCliente: String,     // Nombre del cliente
+    val telefono: String,          // Teléfono de contacto
+    val direccion: String,         // Dirección física
+    val referenciaLugar: String,   // Referencia de la ubicación
+    val descripcionPedido: String, // Contenido de la orden
+    val idRepartidor: Int,         // ID del repartidor asignado (FK)
+    val estatus: Int               // Código del estado del pedido
 )
 ```
 
@@ -194,16 +258,16 @@ data class Pedido(
 package mx.utng.deliverytrack.mobile.data.models
 
 /**
- * Representa a un repartidor disponible en la flotilla del sistema.
+ * Entidad de datos que modela la información básica de un Repartidor en la plataforma.
  *
- * @property id ID único de usuario del repartidor.
+ * @property id Identificador único de usuario del repartidor en la base de datos.
  * @property nombre Nombre completo del repartidor.
- * @property telefono Número de teléfono para contacto de coordinación.
+ * @property telefono Número de teléfono para comunicación logística y llamadas.
  */
 data class Repartidor(
-    val id: Int,
-    val nombre: String,
-    val telefono: String
+    val id: Int,          // ID del repartidor en la tabla usuario
+    val nombre: String,   // Nombre completo registrado
+    val telefono: String  // Número telefónico de contacto
 )
 ```
 
@@ -216,7 +280,7 @@ Esta carpeta contiene las clases encargadas del acceso y abstracción de datos r
 ---
 
 ### `mobile/src/main/java/mx/utng/deliverytrack/mobile/data/repository/MobileRepository.kt`
-**Funcionalidad:** Repositorio de datos del módulo móvil. Utiliza el cliente `RemoteDataSource` del módulo compartido `:shared` para realizar peticiones HTTP GET y mapear la respuesta JSON con la lista de repartidores registrados y activos en el sistema.
+**Funcionalidad:** Repositorio central de datos del módulo móvil. Utiliza el cliente `RemoteDataSource` del módulo compartido `:shared` para realizar peticiones HTTP GET y mapear la respuesta JSON con la lista de repartidores registrados y activos en el sistema.
 
 ```kotlin
 package mx.utng.deliverytrack.mobile.data.repository
@@ -227,37 +291,60 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * Repositorio de datos para el módulo móvil.
- * Centraliza las consultas a endpoints de usuarios y repartidores.
- * 
- * @property remoteDataSource Instancia del origen de datos remoto del módulo compartido.
+ * Clase repositorio de datos para el módulo móvil.
+ * Centraliza las llamadas a la API remota y el mapeo de objetos JSON a modelos Kotlin.
+ *
+ * @property remoteDataSource Instancia del origen de datos HTTP proveniente del módulo compartido `:shared`.
  */
-class MobileRepository(private val remoteDataSource: RemoteDataSource = RemoteDataSource()) {
+class MobileRepository(
+    private val remoteDataSource: RemoteDataSource = RemoteDataSource() // Inyección por defecto de RemoteDataSource
+) {
 
     /**
-     * Consulta el endpoint de repartidores y mapea el JSON de respuesta a una lista de objetos [Repartidor].
-     * 
-     * @param callback Retorna éxito (Boolean), lista de repartidores o mensaje de error.
+     * Realiza una consulta asíncrona a la API backend para obtener la lista de repartidores registrados.
+     *
+     * @param callback Función lambda invocada al completar la solicitud HTTP REST.
+     *        - Recibe `success`: Boolean indicando éxito o fallo de la petición.
+     *        - Recibe `repartidores`: List<Repartidor>? con la lista parseada de repartidores o null si falló.
+     *        - Recibe `error`: String? con el mensaje de error o null si la respuesta fue correcta.
+     * @return Unit (No retorna valor directo, entrega los datos asíncronamente mediante el callback).
      */
-    fun getRepartidores(callback: (Boolean, List<Repartidor>?, String?) -> Unit) {
+    fun getRepartidores(
+        callback: (success: Boolean, repartidores: List<Repartidor>?, error: String?) -> Unit // Firma del callback
+    ) {
+        // Ejecutar petición GET al endpoint de usuarios repartidores mediante el cliente HTTP compartido
         remoteDataSource.get("/api/usuarios/repartidores") { success, response ->
+            // Evaluar si la llamada fue exitosa y la cadena de respuesta no es nula
             if (success && response != null) {
                 try {
+                    // Convertir el texto plano de respuesta JSON en una estructura JSONArray
                     val arr = JSONArray(response)
-                    val list = (0 until arr.length()).map {
-                        val obj = arr.getJSONObject(it)
+                    
+                    // Iterar sobre cada elemento del arreglo JSON para transformarlo en un objeto Repartidor
+                    val list = (0 until arr.length()).map { index ->
+                        // Extraer el objeto JSONObject en el índice actual
+                        val obj = arr.getJSONObject(index)
+                        
+                        // Construir e instanciar la entidad Repartidor mapeando los campos JSON
                         Repartidor(
-                            id = obj.getInt("id_user"),
-                            nombre = obj.getString("nombre_completo"),
-                            telefono = obj.getString("telefono")
+                            id = obj.getInt("id_user"),                 // Extraer la propiedad id_user
+                            nombre = obj.getString("nombre_completo"),  // Extraer el nombre completo
+                            telefono = obj.getString("telefono")        // Extraer el teléfono
                         )
                     }
+                    
+                    // Invocar el callback notificando éxito y entregando la lista parseada
                     callback(true, list, null)
+                    return@get // Finalizar la ejecución del bloque de callback
                 } catch (e: Exception) {
+                    // Capturar excepciones durante el parseo del formato JSON
                     callback(false, null, e.message)
+                    return@get // Salir del bloque en caso de excepción
                 }
             } else {
-                callback(false, null, response ?: "Error de carga")
+                // Notificar fallo en la comunicación o cuerpo de respuesta vacío
+                callback(false, null, response ?: "Error al cargar la lista de repartidores desde el servidor")
+                return@get // Salir del bloque
             }
         }
     }
@@ -292,161 +379,206 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 /**
- * Servicio de escucha Wearable de Android.
- * 
- * Actúa como puente entre la aplicación del reloj Wear OS y el backend REST en la nube.
+ * Servicio en segundo plano que atiende solicitudes enviadas por el smartwatch Wear OS vía Google Play Services API.
  */
 class MobileWearableListenerService : WearableListenerService() {
 
-    // Pool de hilos para ejecutar llamadas de red de forma asíncrona fuera del hilo principal
+    // Instancia de un pool de hilos reutilizables para ejecutar peticiones HTTP asíncronas
     private val executor = Executors.newCachedThreadPool()
 
-    // Cliente OkHttp configurado con tiempos límite de 5 segundos
+    // Cliente OkHttp configurado con tiempos límite de respuesta de 5 segundos
     private val client = OkHttpClient.Builder()
-        .connectTimeout(5, TimeUnit.SECONDS)
-        .readTimeout(5, TimeUnit.SECONDS)
-        .writeTimeout(5, TimeUnit.SECONDS)
+        .connectTimeout(5, TimeUnit.SECONDS) // Tiempo máximo para establecer conexión
+        .readTimeout(5, TimeUnit.SECONDS)    // Tiempo máximo para leer la respuesta
+        .writeTimeout(5, TimeUnit.SECONDS)   // Tiempo máximo de escritura de datos
         .build()
 
+    // Definición del tipo de contenido de medios en formato JSON codificado en UTF-8
     private val mediaTypeJson = "application/json; charset=utf-8".toMediaType()
 
     companion object {
+        // Etiqueta de identificación para el registro de mensajes en el Logcat
         private const val TAG = "MobileWearableService"
     }
 
     /**
-     * Invocado automáticamente cuando un reloj Wear OS emparejado envía un mensaje.
+     * Callback activado automáticamente cuando la app móvil recibe un mensaje de red desde un reloj Wear OS emparejado.
+     *
+     * @param messageEvent Objeto evento con la información del mensaje (ruta, datos y nodo origen).
+     * @return Unit (Procesa la solicitud de manera asíncrona dentro del pool de hilos).
      */
     override fun onMessageReceived(messageEvent: MessageEvent) {
+        // Invocar la implementación de la clase base WearableListenerService
         super.onMessageReceived(messageEvent)
+        
+        // Extraer la ruta del protocolo enviada en el mensaje (ej. "/pedido/activo/get")
         val path = messageEvent.path
+        
+        // Convertir la carga útil de bytes recibida a una cadena de texto UTF-8
         val payload = String(messageEvent.data, Charsets.UTF_8)
+        
+        // Obtener el ID único del nodo emisor (smartwatch)
         val sourceNodeId = messageEvent.sourceNodeId
 
-        Log.d(TAG, "Mensaje recibido desde Wearable. Ruta: $path, Payload: $payload")
+        // Registrar el evento de recepción en la bitácora del sistema
+        Log.d(TAG, "Mensaje recibido desde el reloj Wear OS. Ruta: $path, Carga útil: $payload")
 
-        // Delegar la petición al pool de hilos de ejecución
+        // Delegar la atención del mensaje a un hilo secundario para no bloquear el servicio
         executor.execute {
             try {
+                // Evaluar la ruta del mensaje recibido
                 when (path) {
-                    "/pedido/activo/get" -> fetchActiveOrder(payload, sourceNodeId)
-                    "/pedido/status/update" -> updateOrderStatus(payload, sourceNodeId)
-                    else -> Log.w(TAG, "Ruta de mensaje no reconocida: $path")
+                    // Ruta para solicitar la información del pedido activo asignado al repartidor
+                    "/pedido/activo/get" -> {
+                        fetchActiveOrder(repartidorId = payload, clientNodeId = sourceNodeId)
+                    }
+                    // Ruta para actualizar el estado del pedido desde el reloj inteligente
+                    "/pedido/status/update" -> {
+                        updateOrderStatus(jsonPayload = payload, clientNodeId = sourceNodeId)
+                    }
+                    // Ruta desconocida o no soportada
+                    else -> {
+                        Log.w(TAG, "Ruta de mensaje no reconocida por el servicio: $path")
+                    }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error procesando mensaje en ruta: $path", e)
+                // Registrar cualquier excepción ocurrida durante el procesamiento
+                Log.e(TAG, "Error procesando mensaje Wearable en la ruta: $path", e)
             }
         }
     }
 
     /**
-     * Consulta el pedido activo asignado al repartidor desde la API REST y envía la respuesta al reloj.
+     * Consulta el pedido activo asignado al repartidor desde la API REST backend y devuelve el resultado al reloj.
+     *
+     * @param repartidorId ID del repartidor recibido en el payload.
+     * @param clientNodeId ID de red del reloj Wear OS para enviar la respuesta.
+     * @return Unit (Envía la respuesta JSON al cliente de mensajes de Google Wearable API).
      */
     private fun fetchActiveOrder(repartidorId: String, clientNodeId: String) {
         Log.d(TAG, "Consultando pedido activo para el repartidor ID: $repartidorId")
+        
+        // Construir la petición HTTP GET al endpoint del backend utilizando el URL configurado en el servidor
         val request = Request.Builder()
-            .url("${ServerConfig.BASE_URL}/api/pedidos/activo?repartidorId=$repartidorId")
-            .get()
-            .build()
+            .url("${ServerConfig.BASE_URL}/api/pedidos/activo?repartidorId=$repartidorId") // URL con parámetro query
+            .get() // Especificar verbo HTTP GET
+            .build() // Finalizar construcción de la solicitud
 
         try {
+            // Ejecutar la petición síncrona dentro del hilo del pool de ejecución
             client.newCall(request).execute().use { response ->
+                // Extraer el texto del cuerpo de la respuesta HTTP
                 val responseBody = response.body?.string() ?: ""
-                Log.d(TAG, "Respuesta del backend (Pedido Activo): Código=${response.code}, Cuerpo=$responseBody")
+                Log.d(TAG, "Respuesta REST backend: Código=${response.code}, Cuerpo=$responseBody")
                 
+                // Formatear el objeto de respuesta JSON para enviarlo al reloj inteligente
                 val resultObj = JSONObject().apply {
-                    put("success", response.isSuccessful)
-                    put("code", response.code)
-                    put("data", if (responseBody.isNotEmpty()) JSONObject(responseBody) else null)
+                    put("success", response.isSuccessful) // Indicador de éxito (código 2xx)
+                    put("code", response.code) // Código de respuesta HTTP (ej. 200, 404)
+                    put("data", if (responseBody.isNotEmpty()) JSONObject(responseBody) else null) // Contenido del pedido
                 }
                 
-                sendReply(clientNodeId, "/pedido/activo/response", resultObj.toString())
+                // Transmitir la respuesta de vuelta al smartwatch utilizando la ruta de respuesta
+                sendReply(nodeId = clientNodeId, path = "/pedido/activo/response", message = resultObj.toString())
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error consultando pedido activo en backend", e)
+            // Manejar errores de conexión o excepciones al consultar el servidor
+            Log.e(TAG, "Excepción al consultar el pedido activo en el servidor REST", e)
+            
+            // Construir JSON de respuesta notificando la falla
             val errObj = JSONObject().apply {
                 put("success", false)
                 put("error", e.message)
             }
-            sendReply(clientNodeId, "/pedido/activo/response", errObj.toString())
+            // Enviar mensaje de error al reloj
+            sendReply(nodeId = clientNodeId, path = "/pedido/activo/response", message = errObj.toString())
         }
     }
 
     /**
-     * Actualiza el estado de un pedido enviando una petición PATCH al servidor REST.
+     * Procesa la solicitud enviada por el reloj inteligente para actualizar el estatus de una entrega en el servidor.
+     *
+     * @param jsonPayload Cadena JSON recibida del reloj con id_pedido y estatus.
+     * @param clientNodeId ID de red del reloj emisor.
+     * @return Unit (Envía el resultado del cambio de estatus vía Wearable API).
      */
     private fun updateOrderStatus(jsonPayload: String, clientNodeId: String) {
-        Log.d(TAG, "Actualizando estatus de pedido con payload: $jsonPayload")
+        Log.d(TAG, "Procesando actualización de estatus enviada desde el reloj: $jsonPayload")
+        
         try {
-            val json = JSONObject(jsonPayload)
-            val orderId = json.getInt("id_pedido")
-            val estatus = json.getInt("estatus")
-            val repartidorId = json.getInt("repartidorId")
+            // Parsear la cadena JSON recibida
+            val inputObj = JSONObject(jsonPayload)
+            val pedidoId = inputObj.getInt("id_pedido") // Extraer ID del pedido
+            val newStatus = inputObj.getInt("estatus")  // Extraer el nuevo estatus
 
-            val requestBodyJson = JSONObject().apply {
-                put("estatus", estatus)
-                put("repartidorId", repartidorId)
+            // Crear el cuerpo de la petición PUT en formato JSON
+            val bodyObj = JSONObject().apply {
+                put("estatus", newStatus)
             }
 
+            // Construir la petición HTTP PUT dirigida a la API REST del servidor central
             val request = Request.Builder()
-                .url("${ServerConfig.BASE_URL}/api/pedidos/$orderId/estatus")
-                .patch(requestBodyJson.toString().toRequestBody(mediaTypeJson))
+                .url("${ServerConfig.BASE_URL}/api/pedidos/$pedidoId/estatus") // Endpoint de estatus
+                .put(bodyObj.toString().toRequestBody(mediaTypeJson)) // Verbo PUT con cuerpo JSON
                 .build()
 
+            // Ejecutar la petición HTTP en el cliente OkHttp
             client.newCall(request).execute().use { response ->
-                val responseBody = response.body?.string() ?: ""
-                Log.d(TAG, "Respuesta del backend (Actualización de Estado): Código=${response.code}, Cuerpo=$responseBody")
-
+                // Crear JSON de respuesta para el smartwatch
                 val resultObj = JSONObject().apply {
                     put("success", response.isSuccessful)
                     put("code", response.code)
-                    put("data", if (responseBody.isNotEmpty()) JSONObject(responseBody) else null)
                 }
-
-                sendReply(clientNodeId, "/pedido/status/response", resultObj.toString())
+                // Transmitir la respuesta de actualización al reloj
+                sendReply(nodeId = clientNodeId, path = "/pedido/status/response", message = resultObj.toString())
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error actualizando estatus o parseando payload", e)
+            // Manejar excepciones de red o de parseo durante la actualización
+            Log.e(TAG, "Error actualizando el estatus del pedido enviado desde Wear OS", e)
             val errObj = JSONObject().apply {
                 put("success", false)
                 put("error", e.message)
             }
-            sendReply(clientNodeId, "/pedido/status/response", errObj.toString())
+            sendReply(nodeId = clientNodeId, path = "/pedido/status/response", message = errObj.toString())
         }
     }
 
     /**
-     * Envia el mensaje de respuesta de vuelta al nodo de Wear OS origen mediante MessageClient.
+     * Función auxiliar para transmitir mensajes de respuesta de vuelta al dispositivo de destino Wear OS.
+     *
+     * @param nodeId Identificador de nodo de red del dispositivo destino (smartwatch).
+     * @param path Ruta del mensaje en la arquitectura de comunicación.
+     * @param message Mensaje formateado en cadena de texto JSON.
+     * @return Unit (Envía el mensaje usando Google Play Services Wearable.getMessageClient).
      */
-    private fun sendReply(targetNodeId: String, path: String, response: String) {
-        Log.d(TAG, "Enviando respuesta a nodo Wearable $targetNodeId en ruta $path. Payload: $response")
-        Wearable.getMessageClient(this)
-            .sendMessage(targetNodeId, path, response.toByteArray(Charsets.UTF_8))
+    private fun sendReply(nodeId: String, path: String, message: String) {
+        // Convertir la cadena de texto a un arreglo de bytes en UTF-8
+        val payload = message.toByteArray(Charsets.UTF_8)
+        
+        // Invocar el cliente de mensajes de la API Google Wearable
+        Wearable.getMessageClient(this).sendMessage(nodeId, path, payload)
             .addOnSuccessListener {
-                Log.d(TAG, "Respuesta enviada exitosamente a la ruta: $path")
+                // Registrar confirmación exitosa de envío
+                Log.d(TAG, "Respuesta enviada con éxito al nodo $nodeId en la ruta: $path")
             }
             .addOnFailureListener { e ->
-                Log.e(TAG, "Error al enviar respuesta a la ruta: $path", e)
+                // Registrar fallo en la entrega del mensaje
+                Log.e(TAG, "Error al transmitir respuesta al nodo $nodeId en la ruta: $path", e)
             }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        executor.shutdown()
     }
 }
 ```
 
 ---
 
-## 5. Carpeta MQTT (`mqtt`)
+## 5. Carpeta MQTT (`mqtt/`)
 
-Esta carpeta se encarga de gestionar la conexión con el broker de mensajería MQTT para transmitir la telemetría en tiempo real del repartidor (ubicación GPS y velocidad).
+Esta carpeta contiene el gestor de mensajería MQTT para publicar la telemetría de ubicación GPS del teléfono móvil hacia la nube en tiempo real.
 
 ---
 
 ### `mobile/src/main/java/mx/utng/deliverytrack/mobile/mqtt/MobileMqttManager.kt`
-**Funcionalidad:** Gestor de conexión MQTT para el teléfono móvil. Se conecta al broker broker de HiveMQ Cloud vía SSL en el puerto 8883 y publica la telemetría del repartidor (`id_repartidor`, `lat`, `lng`, `speed`) en el tema `deliverytrack/telemetry/{id_repartidor}`.
+**Funcionalidad:** Gestor de conexión MQTT para el teléfono móvil. Se conecta al broker de HiveMQ Cloud vía SSL en el puerto 8883 y publica la telemetría del repartidor (`id_repartidor`, `lat`, `lng`, `speed`) en el tema `deliverytrack/telemetry/{id_repartidor}`.
 
 ```kotlin
 package mx.utng.deliverytrack.mobile.mqtt
@@ -454,39 +586,78 @@ package mx.utng.deliverytrack.mobile.mqtt
 import mx.utng.deliverytrack.shared.mqtt.MqttClientHelper
 
 /**
- * Gestor MQTT para transmisión de telemetría de posición GPS en tiempo real.
- * 
- * @property serverUri URI del broker MQTT con cifrado SSL (HiveMQ Cloud).
- * @property username Usuario de autenticación del broker MQTT.
- * @property password Contraseña de autenticación del broker MQTT.
+ * Gestor responsable de establecer la conexión MQTT y enviar paquetes de telemetría de posición GPS en tiempo real.
+ *
+ * @property serverUri URI completa del servidor broker MQTT cifrado con protocolo SSL (HiveMQ Cloud).
+ * @property username Nombre de usuario para la autenticación en el servidor MQTT.
+ * @property password Contraseña de acceso para el usuario del servidor MQTT.
  */
 class MobileMqttManager(
-    private val serverUri: String = "ssl://79a94522998842728c5ef7bf42fd3c30.s1.eu.hivemq.cloud:8883",
-    private val username: String = "smarthealthmonitor",
-    private val password: String = "linux123"
+    private val serverUri: String = "ssl://79a94522998842728c5ef7bf42fd3c30.s1.eu.hivemq.cloud:8883", // Broker SSL
+    private val username: String = "smarthealthmonitor", // Credencial de usuario HiveMQ
+    private val password: String = "linux123" // Credencial de clave HiveMQ
 ) {
+    // Referencia al cliente auxiliar MQTT del módulo compartido
     private var mqttClientHelper: MqttClientHelper? = null
 
     /**
-     * Conecta con el broker MQTT utilizando un cliente ID específico.
+     * Inicia el proceso de conexión con el broker MQTT.
+     *
+     * @param clientId Identificador de cliente único registrado en la sesión del broker.
+     * @param onConnected Función lambda que se ejecuta de forma asíncrona al conectarse exitosamente.
+     * @return Unit (Conecta el cliente socket MQTT al servidor en segundo plano).
      */
-    fun connect(clientId: String, onConnected: () -> Unit) {
-        mqttClientHelper = MqttClientHelper(serverUri, clientId, username, password)
-        mqttClientHelper?.connect(onConnected) { _ -> }
+    fun connect(
+        clientId: String, // ID único del cliente MQTT
+        onConnected: () -> Unit // Callback de conexión exitosa
+    ) {
+        // Crear una nueva instancia del helper cliente MQTT inyectando servidor y credenciales
+        mqttClientHelper = MqttClientHelper(
+            serverUri = serverUri,
+            clientId = clientId,
+            username = username,
+            password = password
+        )
+        
+        // Ejecutar la conexión asíncrona pasando la callback de éxito y una lambda vacía para errores
+        mqttClientHelper?.connect(
+            onConnected = onConnected, // Callback cuando se completa la conexión
+            onFailure = { _ -> }      // Manejador de fallas
+        )
     }
 
     /**
-     * Publica las coordenadas GPS y velocidad del repartidor en el canal MQTT correspondiente.
+     * Publica las coordenadas GPS de la posición del repartidor en el canal MQTT dedicado.
+     *
+     * @param courierId Identificador único del repartidor.
+     * @param lat Latitud GPS en grados decimales.
+     * @param lng Longitud GPS en grados decimales.
+     * @param speed Velocidad actual de avance del repartidor.
+     * @return Unit (Formatea el payload en cadena JSON y lo envía al tópico MQTT).
      */
-    fun publishTelemetry(courierId: Int, lat: Double, lng: Double, speed: Float) {
+    fun publishTelemetry(
+        courierId: Int,   // ID del repartidor
+        lat: Double,      // Coordenada Latitud
+        lng: Double,      // Coordenada Longitud
+        speed: Float      // Velocidad
+    ) {
+        // Construir la cadena de texto con formato JSON representando la telemetría actual
         val payload = """{"id_repartidor":$courierId,"lat":$lat,"lng":$lng,"speed":$speed}"""
-        mqttClientHelper?.publish("deliverytrack/telemetry/$courierId", payload)
+        
+        // Definir el tópico canal dinámico según el ID del repartidor
+        val topic = "deliverytrack/telemetry/$courierId"
+        
+        // Publicar la cadena JSON al tópico especificado
+        mqttClientHelper?.publish(topic = topic, payload = payload)
     }
 
     /**
-     * Desconecta limpiamente la sesión MQTT activa.
+     * Desconecta limpiamente la sesión activa del cliente MQTT.
+     *
+     * @return Unit (Cierra la conexión del socket de red).
      */
     fun disconnect() {
+        // Invocar el método de desconexión del helper cliente
         mqttClientHelper?.disconnect()
     }
 }
@@ -494,38 +665,61 @@ class MobileMqttManager(
 
 ---
 
-## 6. Carpeta Navegación (`navigation`)
+## 6. Carpeta Navegación (`navigation/`)
 
 Esta carpeta define las rutas de navegación tipadas para Compose Navigation dentro de la aplicación móvil.
 
 ---
 
 ### `mobile/src/main/java/mx/utng/deliverytrack/mobile/navigation/NavGraph.kt`
-**Funcionalidad:** Sealed class `Screen` que define los nombres de ruta estáticos y dinámicos para la navegación entre pantallas (Login, Mis Pedidos, Detalle de Pedido, Dashboard de Admin, Nuevo Pedido y Gestión de Repartidores).
+**Funcionalidad:** Define la jerarquía de rutas sealed class `Screen` para la navegación entre pantallas de Compose dentro de la aplicación.
 
 ```kotlin
 package mx.utng.deliverytrack.mobile.navigation
 
 /**
- * Definición de pantallas y rutas de navegación de la app.
+ * Clase sellada (Sealed Class) para estructurar la jerarquía de rutas de navegación en la UI de Jetpack Compose.
+ *
+ * @property route Cadena de texto identificadora de la ruta de la pantalla para el NavHost.
  */
-sealed class Screen(val route: String) {
-    object Login : Screen("login")
-    object MisPedidos : Screen("mis_pedidos")
-    object DetallePedido : Screen("detalle_pedido/{pedidoId}") {
-        fun createRoute(pedidoId: Int) = "detalle_pedido/$pedidoId"
+sealed class Screen(
+    val route: String // Ruta en formato de texto plano
+) {
+    /** Ruta correspondiente a la pantalla de Inicio de Sesión (Login) */
+    object Login : Screen(route = "login")
+    
+    /** Ruta de la pantalla principal de Pedidos Asignados al Repartidor */
+    object MisPedidos : Screen(route = "mis_pedidos")
+    
+    /** Ruta con parámetro dinámico del detalle de pedido para repartidores */
+    object DetallePedido : Screen(route = "detalle_pedido/{pedidoId}") {
+        /**
+         * Función helper para construir la cadena de ruta tipada inyectando el valor real del pedidoId.
+         *
+         * @param pedidoId ID del pedido a consultar.
+         * @return String conteniendo la ruta formateada para el navegador (ej: "detalle_pedido/15").
+         */
+        fun createRoute(pedidoId: Int): String {
+            return "detalle_pedido/$pedidoId" // Retornar cadena con el ID interpolate
+        }
     }
-    object AdminDashboard : Screen("admin_dashboard")
-    object NuevoPedido : Screen("nuevo_pedido")
-    object GestionRepartidores : Screen("gestion_repartidores")
+    
+    /** Ruta del Dashboard Principal del Administrador */
+    object AdminDashboard : Screen(route = "admin_dashboard")
+    
+    /** Ruta del formulario de Alta/Edición de Pedidos */
+    object NuevoPedido : Screen(route = "nuevo_pedido")
+    
+    /** Ruta del módulo de Gestión de Usuarios y Repartidores */
+    object GestionRepartidores : Screen(route = "gestion_repartidores")
 }
 ```
 
 ---
 
-## 7. Carpeta UI - Pantallas Principales (`ui`)
+## 7. Carpeta UI - Actividad Principal (`ui/`)
 
-Esta carpeta contiene la actividad principal `MainActivity` y pantallas generales como la creación y edición de pedidos.
+Esta carpeta contiene la actividad raíz de la aplicación móvil (`MainActivity`) y formularios principales de la interfaz del sistema.
 
 ---
 
@@ -551,54 +745,74 @@ import mx.utng.deliverytrack.mobile.ui.repartidor.DetallePedidoRepartidorActivit
 import mx.utng.deliverytrack.mobile.ui.repartidor.MisPedidosRepartidorScreen
 
 /**
- * Actividad Principal de la aplicación móvil.
- * Controla el enrutamiento según el rol de usuario autenticado.
+ * Actividad Principal de Android y contenedor raíz del árbol de vistas Compose.
  */
 class MainActivity : ComponentActivity() {
 
-    // Estado reactivo que almacena la sesión de usuario activa
+    // Variable de estado reactiva que conserva la sesión activa del usuario (null si no ha iniciado sesión)
     private var activeSession by mutableStateOf<UserSession?>(null)
 
+    /**
+     * Método del ciclo de vida onCreate ejecutado al iniciar la actividad.
+     *
+     * @param savedInstanceState Estado previo guardado en la reinstanciación.
+     * @return Unit (Renderiza la vista reactiva con setContent).
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Invocación a la implementación base onCreate de ComponentActivity
         super.onCreate(savedInstanceState)
+        
+        // Guardar referencia constante del contexto de la actividad actual
         val context = this
 
+        // Establecer el contenido gráfico de la pantalla mediante Jetpack Compose
         setContent {
+            // Aplicar el tema gráfico global de Material Design 3
             MaterialTheme {
+                // Almacenar temporalmente la sesión activa en una constante local
                 val session = activeSession
+                
+                // Evaluar si existe una sesión de usuario autenticada
                 if (session == null) {
-                    // Muestra pantalla de inicio de sesión si no hay sesión activa
+                    // Renderizar la pantalla de Login si no hay usuario autenticado
                     LoginScreen(
-                        onLoginSuccess = { user ->
+                        onLoginSuccess = { user -> // Callback cuando el inicio de sesión es exitoso
+                            // Actualizar la variable de estado reactivo con la sesión devuelta
                             activeSession = user
                         }
                     )
                 } else if (session.rol == 1) { 
-                    // Muestra el Dashboard para administradores (Rol 1)
+                    // Renderizar el Dashboard para usuarios con Rol 1 (Administrador)
                     AdminDashboardScreen(
-                        userSession = session,
-                        onCrearPedidoClick = {
+                        userSession = session, // Pasar objeto de sesión del administrador
+                        onCrearPedidoClick = { // Callback al presionar el botón de crear pedido
+                            // Lanzar la actividad NuevoPedidoActivity mediante un Intent
                             context.startActivity(Intent(context, NuevoPedidoActivity::class.java))
                         },
-                        onGestionUsuariosClick = {
+                        onGestionUsuariosClick = { // Callback para administrar usuarios
+                            // Lanzar la actividad GestionUsuariosActivity
                             context.startActivity(Intent(context, GestionUsuariosActivity::class.java))
                         },
-                        onLogoutClick = {
+                        onLogoutClick = { // Callback para cerrar sesión
+                            // Establecer la sesión activa a null para retornar a la pantalla de Login
                             activeSession = null
                         }
                     )
                 } else { 
-                    // Muestra la lista de entregas para repartidores (Rol 2)
+                    // Renderizar la pantalla de entregas para usuarios con Rol 2 (Repartidor)
                     MisPedidosRepartidorScreen(
-                        userSession = session,
-                        onVerDetalleClick = { pedidoId ->
+                        userSession = session, // Pasar objeto de sesión del repartidor
+                        onVerDetalleClick = { pedidoId -> // Callback al hacer clic en un pedido de la lista
+                            // Construir Intent explícito hacia DetallePedidoRepartidorActivity inyectando extras
                             val intent = Intent(context, DetallePedidoRepartidorActivity::class.java).apply {
-                                putExtra(DetallePedidoRepartidorActivity.EXTRA_ORDER_ID, pedidoId)
-                                putExtra(DetallePedidoRepartidorActivity.EXTRA_COURIER_ID, session.idUser)
+                                putExtra(DetallePedidoRepartidorActivity.EXTRA_ORDER_ID, pedidoId) // Inyectar ID del pedido
+                                putExtra(DetallePedidoRepartidorActivity.EXTRA_COURIER_ID, session.idUser) // Inyectar ID de repartidor
                             }
+                            // Iniciar la actividad de detalle de la entrega
                             context.startActivity(intent)
                         },
-                        onLogoutClick = {
+                        onLogoutClick = { // Callback para cerrar sesión del repartidor
+                            // Limpiar la sesión activa
                             activeSession = null
                         }
                     )
@@ -645,11 +859,15 @@ import org.json.JSONObject
 import kotlin.concurrent.thread
 
 /**
- * Función de utilidad para omitir la validación estricta de certificados SSL en entornos de prueba.
+ * Función auxiliar privada para deshabilitar la validación estricta de certificados SSL en modo desarrollo.
+ *
+ * @param conn Conexión HttpURLConnection sobre la cual deshabilitar la comprobación SSL.
+ * @return Unit (Modifica las propiedades de la conexión de red).
  */
 private fun applySslBypass(conn: java.net.HttpURLConnection) {
     if (conn is javax.net.ssl.HttpsURLConnection) {
         try {
+            // Arreglo de TrustManager que confía en cualquier certificado SSL
             val trustAllCerts = arrayOf<javax.net.ssl.TrustManager>(
                 object : javax.net.ssl.X509TrustManager {
                     override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = arrayOf()
@@ -657,34 +875,52 @@ private fun applySslBypass(conn: java.net.HttpURLConnection) {
                     override fun checkServerTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
                 }
             )
+            // Inicializar el contexto SSL en modo "SSL"
             val sc = javax.net.ssl.SSLContext.getInstance("SSL")
             sc.init(null, trustAllCerts, java.security.SecureRandom())
+            // Asignar el SocketFactory y el verificador de nombre de host
             conn.sslSocketFactory = sc.socketFactory
             conn.hostnameVerifier = javax.net.ssl.HostnameVerifier { _, _ -> true }
         } catch (_: Exception) {}
     }
 }
 
+/**
+ * Actividad encargada de presentar el formulario de Alta y Edición de Pedidos.
+ */
 class NuevoPedidoActivity : ComponentActivity() {
 
+    // URL base del servidor obtenida desde la configuración compartida
     private val backendUrl = ServerConfig.BASE_URL
+    // Handler para enviar tareas de UI al hilo principal (Main Looper)
     private val mainHandler = Handler(Looper.getMainLooper())
 
     companion object {
+        /** Clave del Extra Intent para identificar el ID del pedido a editar */
         const val EXTRA_EDIT_ORDER_ID = "extra_edit_order_id"
     }
 
+    /**
+     * Inicializador del ciclo de vida onCreate de la actividad.
+     *
+     * @param savedInstanceState Estado previo guardado.
+     * @return Unit.
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Extraer el ID del pedido a editar enviado por el Intent (o valor por defecto -1)
         val editOrderId = intent.getIntExtra(EXTRA_EDIT_ORDER_ID, -1)
 
+        // Definir el contenido gráfico en Compose
         setContent {
             MaterialTheme {
+                // Invocación del composable principal del formulario
                 NuevoPedidoScreen(
-                    backendUrl = backendUrl,
-                    editOrderId = if (editOrderId > 0) editOrderId else null,
-                    onPedidoGuardado = { finish() },
-                    onShowToast = { msg ->
+                    backendUrl = backendUrl, // Pasar la URL del backend
+                    editOrderId = if (editOrderId > 0) editOrderId else null, // Enviar ID solo si es mayor a 0
+                    onPedidoGuardado = { finish() }, // Callback para cerrar la actividad al guardar
+                    onShowToast = { msg -> // Callback para proyectar un Toast en el hilo principal
                         mainHandler.post {
                             Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
                         }
@@ -695,6 +931,15 @@ class NuevoPedidoActivity : ComponentActivity() {
     }
 }
 
+/**
+ * Componente Composable que construye la interfaz visual del formulario para crear/editar un pedido.
+ *
+ * @param backendUrl Dirección base HTTP de la API REST.
+ * @param editOrderId ID del pedido si está en modo edición, o null si se crea uno nuevo.
+ * @param onPedidoGuardado Callback al finalizar el guardado.
+ * @param onShowToast Callback para proyectar notificaciones en pantalla.
+ * @return Unit.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NuevoPedidoScreen(
@@ -703,58 +948,66 @@ fun NuevoPedidoScreen(
     onPedidoGuardado: () -> Unit,
     onShowToast: (String) -> Unit
 ) {
+    // Determinar si la vista está operando en modo edición
     val isEditMode = (editOrderId != null)
 
+    // Variables de estado reactivas para almacenar el contenido de las cajas de texto del formulario
     var nombreCliente by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
     var direccion by remember { mutableStateOf("") }
     var referencia by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
 
+    // Estados para la carga y selección del repartidor
     var repartidores by remember { mutableStateOf<List<Repartidor>>(emptyList()) }
     var repartidorSeleccionado by remember { mutableStateOf<Repartidor?>(null) }
     var dropdownExpanded by remember { mutableStateOf(false) }
 
+    // Estados de progreso de carga y error
     var isLoading by remember { mutableStateOf(false) }
     var isLoadingRepartidores by remember { mutableStateOf(true) }
     var errorRepartidores by remember { mutableStateOf("") }
 
+    // Definición de colores principales
     val primaryBlue = Color(0xFF1A3A6B)
     val accentBlue = Color(0xFF2563EB)
     val mainHandler = remember { Handler(Looper.getMainLooper()) }
 
-    // Obtener la lista de repartidores disponibles
+    // Efecto de lanzamiento al iniciar para consultar la lista de repartidores disponibles
     LaunchedEffect(Unit) {
         thread {
             try {
+                // Crear URL del endpoint de repartidores
                 val url = java.net.URL("$backendUrl/api/usuarios/repartidores")
                 val conn = url.openConnection() as java.net.HttpURLConnection
-                applySslBypass(conn)
-                conn.requestMethod = "GET"
-                conn.connectTimeout = 5000
+                applySslBypass(conn) // Aplicar bypass SSL
+                conn.requestMethod = "GET" // Método GET
+                conn.connectTimeout = 5000 // Timeout de 5s
+                conn.readTimeout = 5000
 
-                val code = conn.responseCode
+                val code = conn.responseCode // Obtener código de respuesta
                 if (code == 200) {
-                    val response = conn.inputStream.bufferedReader().readText()
-                    val arr = JSONArray(response)
-                    val list = (0 until arr.length()).map {
-                        val obj = arr.getJSONObject(it)
+                    val response = conn.inputStream.bufferedReader().readText() // Leer respuesta
+                    val arr = JSONArray(response) // Parsear arreglo JSON
+                    val list = (0 until arr.length()).map { index ->
+                        val obj = arr.getJSONObject(index)
                         Repartidor(
                             id = obj.getInt("id_user"),
                             nombre = obj.getString("nombre_completo"),
                             telefono = obj.getString("telefono")
                         )
                     }
+                    // Publicar resultados en el hilo principal
                     mainHandler.post {
                         repartidores = list
                         if (list.isNotEmpty() && repartidorSeleccionado == null) {
-                            repartidorSeleccionado = list[0]
+                            repartidorSeleccionado = list[0] // Seleccionar primer repartidor por defecto
                         }
                         isLoadingRepartidores = false
                     }
                 } else {
                     mainHandler.post {
-                        errorRepartidores = "Error $code al cargar repartidores"
+                        errorRepartidores = "Error $code al obtener repartidores"
                         isLoadingRepartidores = false
                     }
                 }
@@ -767,19 +1020,22 @@ fun NuevoPedidoScreen(
         }
     }
 
-    // Cargar detalles del pedido si está en modo Edición
+    // Efecto de lanzamiento cuando editOrderId cambia para rellenar el formulario si es edición
     LaunchedEffect(editOrderId) {
         if (editOrderId != null) {
             thread {
                 try {
                     val url = java.net.URL("$backendUrl/api/pedidos/$editOrderId")
                     val conn = url.openConnection() as java.net.HttpURLConnection
+                    applySslBypass(conn)
                     conn.requestMethod = "GET"
+                    conn.connectTimeout = 5000
 
                     if (conn.responseCode == 200) {
                         val text = conn.inputStream.bufferedReader().readText()
-                        val obj = JSONObject(text)
+                        val obj = JSONObject(text) // Parsear objeto JSON del pedido
                         mainHandler.post {
+                            // Rellenar campos con la información existente
                             nombreCliente = obj.optString("nombre_cliente", "")
                             telefono = obj.optString("telefono", "")
                             direccion = obj.optString("direccion", "")
@@ -798,6 +1054,7 @@ fun NuevoPedidoScreen(
         }
     }
 
+    // Estructura principal de la pantalla con Scaffold
     Scaffold(
         topBar = {
             TopAppBar(
@@ -809,176 +1066,238 @@ fun NuevoPedidoScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onPedidoGuardado) {
+                    IconButton(onClick = onPedidoGuardado) { // Botón para regresar
                         Text("←", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = primaryBlue)
             )
         }
-    ) { padding ->
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(innerPadding)
                 .background(Color(0xFFF8FAFC))
-                .verticalScroll(rememberScrollState())
-                .padding(20.dp),
+                .verticalScroll(rememberScrollState()) // Habilitar desplazamiento vertical
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                text = if (isEditMode) "INFORMACIÓN DEL PEDIDO A EDITAR" else "DATOS DEL CLIENTE Y ENTREGA",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Gray
-            )
+            // Tarjeta 1: Información del Cliente
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Información del Cliente",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = primaryBlue
+                    )
 
-            // Campos del formulario
-            OutlinedTextField(
-                value = nombreCliente,
-                onValueChange = { nombreCliente = it },
-                label = { Text("Nombre del cliente *") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
+                    // Campo de Nombre Completo
+                    OutlinedTextField(
+                        value = nombreCliente,
+                        onValueChange = { nombreCliente = it }, // Actualizar estado del nombre
+                        label = { Text("Nombre del Cliente *") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
 
-            OutlinedTextField(
-                value = telefono,
-                onValueChange = { telefono = it },
-                label = { Text("Teléfono de contacto *") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
+                    // Campo de Teléfono
+                    OutlinedTextField(
+                        value = telefono,
+                        onValueChange = { telefono = it }, // Actualizar estado del teléfono
+                        label = { Text("Teléfono *") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                    )
 
-            OutlinedTextField(
-                value = direccion,
-                onValueChange = { direccion = it },
-                label = { Text("Dirección de entrega *") },
-                modifier = Modifier.fillMaxWidth()
-            )
+                    // Campo de Dirección
+                    OutlinedTextField(
+                        value = direccion,
+                        onValueChange = { direccion = it }, // Actualizar estado de la dirección
+                        label = { Text("Dirección de Entrega *") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
 
-            OutlinedTextField(
-                value = referencia,
-                onValueChange = { referencia = it },
-                label = { Text("Referencia del lugar") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = descripcion,
-                onValueChange = { descripcion = it },
-                label = { Text("Descripción de los productos") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 2
-            )
-
-            // Selector desplegable de repartidores
-            Text(
-                text = "REPARTIDOR ASIGNADO",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Gray
-            )
-
-            when {
-                isLoadingRepartidores -> {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Cargando repartidores disponibles...")
-                    }
+                    // Campo de Referencia
+                    OutlinedTextField(
+                        value = referencia,
+                        onValueChange = { referencia = it }, // Actualizar estado de referencia
+                        label = { Text("Referencia del Lugar") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
                 }
-                errorRepartidores.isNotEmpty() -> {
-                    Text(errorRepartidores, color = Color.Red, fontSize = 13.sp)
+            }
+
+            // Tarjeta 2: Detalle del Pedido
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Detalle del Pedido",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = primaryBlue
+                    )
+
+                    // Campo de Descripción del pedido
+                    OutlinedTextField(
+                        value = descripcion,
+                        onValueChange = { descripcion = it }, // Actualizar descripción
+                        label = { Text("Descripción de Artículos *") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 3,
+                        maxLines = 5
+                    )
                 }
-                repartidores.isEmpty() -> {
-                    Text("No hay repartidores activos disponibles.", color = Color.Red, fontSize = 13.sp)
-                }
-                else -> {
-                    ExposedDropdownMenuBox(
-                        expanded = dropdownExpanded,
-                        onExpandedChange = { dropdownExpanded = !dropdownExpanded }
-                    ) {
-                        OutlinedTextField(
-                            value = repartidorSeleccionado?.nombre ?: "Seleccionar repartidor",
-                            onValueChange = {},
-                            readOnly = true,
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded) },
-                            modifier = Modifier
-                                .menuAnchor()
-                                .fillMaxWidth()
-                        )
-                        ExposedDropdownMenu(
+            }
+
+            // Tarjeta 3: Selección de Repartidor
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Asignación de Repartidor",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = primaryBlue
+                    )
+
+                    // Evaluación de estados de carga para el dropdown
+                    if (isLoadingRepartidores) {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    } else if (errorRepartidores.isNotEmpty()) {
+                        Text(text = errorRepartidores, color = MaterialTheme.colorScheme.error)
+                    } else {
+                        // Menú desplegable expuesto para seleccionar repartidor
+                        ExposedDropdownMenuBox(
                             expanded = dropdownExpanded,
-                            onDismissRequest = { dropdownExpanded = false }
+                            onExpandedChange = { dropdownExpanded = !dropdownExpanded }
                         ) {
-                            repartidores.forEach { rep ->
-                                DropdownMenuItem(
-                                    text = { Text("${rep.nombre} (${rep.telefono})") },
-                                    onClick = {
-                                        repartidorSeleccionado = rep
-                                        dropdownExpanded = false
-                                    }
-                                )
+                            OutlinedTextField(
+                                value = repartidorSeleccionado?.nombre ?: "Seleccionar repartidor",
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Repartidor Asignado *") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded) },
+                                modifier = Modifier
+                                    .menuAnchor()
+                                    .fillMaxWidth()
+                            )
+
+                            ExposedDropdownMenu(
+                                expanded = dropdownExpanded,
+                                onDismissRequest = { dropdownExpanded = false }
+                            ) {
+                                repartidores.forEach { rep ->
+                                    DropdownMenuItem(
+                                        text = { Text("${rep.nombre} (${rep.telefono})") },
+                                        onClick = {
+                                            repartidorSeleccionado = rep // Asignar repartidor seleccionado
+                                            dropdownExpanded = false // Cerrar menú
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Botón para Guardar / Editar Pedido
+            // Botón Principal de Envío (Guardar / Actualizar)
             Button(
                 onClick = {
-                    if (nombreCliente.isBlank() || telefono.isBlank() || direccion.isBlank() || repartidorSeleccionado == null) {
-                        onShowToast("Completa los campos obligatorios y selecciona un repartidor")
-                        return@Button
+                    // Validar que los campos obligatorios contengan texto
+                    if (nombreCliente.isBlank() || telefono.isBlank() || direccion.isBlank() || descripcion.isBlank()) {
+                        onShowToast("Por favor completa los campos obligatorios (*)")
+                        return@Button // Detener flujo
+                    }
+                    val repId = repartidorSeleccionado?.id
+                    if (repId == null) {
+                        onShowToast("Debes seleccionar un repartidor")
+                        return@Button // Detener flujo
                     }
 
-                    isLoading = true
-
+                    isLoading = true // Activar indicador de progreso
                     thread {
                         try {
-                            val body = JSONObject().apply {
-                                put("nombre_cliente", nombreCliente.trim())
-                                put("telefono", telefono.trim())
-                                put("direccion", direccion.trim())
-                                put("referencia_lugar", referencia.trim())
-                                put("descripcion_pedido", descripcion.trim())
-                                put("id_repartidor", repartidorSeleccionado?.id)
-                            }.toString()
-
                             val urlString = if (isEditMode) "$backendUrl/api/pedidos/$editOrderId" else "$backendUrl/api/pedidos"
                             val url = java.net.URL(urlString)
                             val conn = url.openConnection() as java.net.HttpURLConnection
                             applySslBypass(conn)
-                            conn.requestMethod = if (isEditMode) "PUT" else "POST"
-                            conn.setRequestProperty("Content-Type", "application/json")
-                            conn.connectTimeout = 6000
+                            conn.requestMethod = if (isEditMode) "PUT" else "POST" // Verbo según el modo
+                            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                            conn.connectTimeout = 5000
                             conn.doOutput = true
-                            conn.outputStream.write(body.toByteArray(Charsets.UTF_8))
 
-                            val code = conn.responseCode
-                            isLoading = false
+                            // Construir objeto JSON para el cuerpo de la petición
+                            val jsonBody = JSONObject().apply {
+                                put("nombre_cliente", nombreCliente)
+                                put("telefono", telefono)
+                                put("direccion", direccion)
+                                put("referencia_lugar", referencia)
+                                put("descripcion_pedido", descripcion)
+                                put("id_repartidor", repId)
+                                if (!isEditMode) {
+                                    put("estatus", 1) // Estado inicial por defecto: 1 (Aceptado)
+                                }
+                            }
 
-                            if (code == 200 || code == 201) {
-                                onShowToast(if (isEditMode) "Pedido #$editOrderId actualizado exitosamente" else "Pedido creado exitosamente")
-                                mainHandler.post { onPedidoGuardado() }
-                            } else {
-                                onShowToast("Error $code al guardar pedido")
+                            // Escribir payload en el OutputStream de la conexión HTTP
+                            conn.outputStream.use { os ->
+                                os.write(jsonBody.toString().toByteArray(Charsets.UTF_8))
+                            }
+
+                            val responseCode = conn.responseCode // Leer código de respuesta
+                            mainHandler.post {
+                                isLoading = false // Desactivar progreso
+                                if (responseCode == 200 || responseCode == 201) {
+                                    onShowToast(if (isEditMode) "Pedido actualizado con éxito" else "Pedido creado exitosamente")
+                                    onPedidoGuardado() // Cerrar actividad
+                                } else {
+                                    onShowToast("Error $responseCode al guardar el pedido")
+                                }
                             }
                         } catch (e: Exception) {
-                            isLoading = false
-                            onShowToast("Error de conexión: ${e.message}")
+                            mainHandler.post {
+                                isLoading = false
+                                onShowToast("Error de conexión: ${e.message}")
+                            }
                         }
                     }
                 },
-                enabled = !isLoading && repartidorSeleccionado != null,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
+                enabled = !isLoading, // Deshabilitar si hay una operación en curso
                 colors = ButtonDefaults.buttonColors(containerColor = accentBlue),
                 shape = RoundedCornerShape(10.dp)
             ) {
@@ -986,10 +1305,9 @@ fun NuevoPedidoScreen(
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
                     Text(
-                        text = if (isEditMode) "Editar pedido" else "Guardar pedido",
+                        text = if (isEditMode) "Guardar Cambios" else "Crear Pedido",
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
@@ -1002,7 +1320,7 @@ fun NuevoPedidoScreen(
 
 ## 8. Carpeta UI - Autenticación (`ui/auth`)
 
-Esta carpeta contiene la pantalla de inicio de sesión y la definición del modelo de sesión de usuario.
+Esta carpeta gestiona el flujo de autenticación, verificación de credenciales de usuario y mantenimiento de la sesión activa en el dispositivo.
 
 ---
 
@@ -1042,16 +1360,28 @@ import org.json.JSONObject
 import kotlin.concurrent.thread
 
 /**
- * Modelo que almacena los datos de la sesión del usuario autenticado.
+ * Modelo de datos que representa los detalles de la sesión iniciada por un usuario autenticado.
+ *
+ * @property idUser Identificador del usuario en la base de datos central.
+ * @property nombreCompleto Nombre completo del usuario.
+ * @property telefono Número telefónico registrado.
+ * @property rol Identificador de rol del usuario (1: Administrador, 2: Repartidor).
+ * @property estatus Estado del usuario (1: Activo).
  */
 data class UserSession(
-    val idUser: Int,
-    val nombreCompleto: String,
-    val telefono: String,
-    val rol: Int,
-    val estatus: Int
+    val idUser: Int,          // ID del usuario
+    val nombreCompleto: String, // Nombre completo
+    val telefono: String,       // Teléfono de login
+    val rol: Int,               // Código de rol (1 o 2)
+    val estatus: Int            // Estatus de la cuenta
 )
 
+/**
+ * Aplica configuración para deshabilitar la verificación estricta SSL en peticiones HTTP.
+ *
+ * @param conn Conexión HttpURLConnection a modificar.
+ * @return Unit.
+ */
 private fun applySslBypass(conn: java.net.HttpURLConnection) {
     if (conn is javax.net.ssl.HttpsURLConnection) {
         try {
@@ -1070,231 +1400,214 @@ private fun applySslBypass(conn: java.net.HttpURLConnection) {
     }
 }
 
+/**
+ * Componente Composable para la vista del inicio de sesión (LoginScreen).
+ *
+ * @param onLoginSuccess Callback invocado cuando las credenciales son válidas, devolviendo un objeto UserSession.
+ * @return Unit (Renderiza la interfaz gráfica de usuario en Compose).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    onLoginSuccess: (UserSession) -> Unit
+    onLoginSuccess: (UserSession) -> Unit // Callback de éxito
 ) {
-    val context = LocalContext.current
+    val context = LocalContext.current // Contexto actual de Android
+    
+    // Estados reactivos para capturar entradas de texto
     var telefono by remember { mutableStateOf("") }
     var contrasena by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf("") }
+    var isPasswordVisible by remember { mutableStateOf(false) } // Estado para conmutar visibilidad de contraseña
+    var isLoading by remember { mutableStateOf(false) } // Estado de carga durante la autenticación
 
-    val bgDark = Color(0xFF0F172A)
-    val cardDark = Color(0xFF1E293B)
-    val primaryBlue = Color(0xFF2563EB)
-    val lightText = Color(0xFF94A3B8)
+    // Paleta de colores para tema oscuro elegante
+    val darkBg = Color(0xFF0F172A)
+    val cardBg = Color(0xFF1E293B)
+    val accentBlue = Color(0xFF2563EB)
+    val lightText = Color(0xFFF8FAFC)
+    val mutedText = Color(0xFF94A3B8)
 
+    // Contenedor Box principal alineado al centro de la pantalla
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(bgDark),
+            .background(darkBg), // Fondo azul oscuro profundo
         contentAlignment = Alignment.Center
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 32.dp),
+                .fillMaxWidth()
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Logotipo circular
+            // Icono decorativo de perfil de usuario
             Surface(
-                modifier = Modifier.size(68.dp),
+                modifier = Modifier.size(80.dp),
                 shape = CircleShape,
-                color = primaryBlue.copy(alpha = 0.2f),
-                border = androidx.compose.foundation.BorderStroke(1.5.dp, primaryBlue)
+                color = accentBlue.copy(alpha = 0.2f)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.AccountCircle,
                         contentDescription = "Logo",
-                        tint = Color.White,
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(48.dp),
+                        tint = accentBlue
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
+            // Título principal de la aplicación
             Text(
                 text = "DeliveryTrack",
-                fontSize = 26.sp,
+                fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
-                letterSpacing = 0.5.sp
+                color = lightText
             )
+
+            // Subtítulo descriptivo
             Text(
-                text = "Sistema de Gestión y Telemetría",
-                fontSize = 13.sp,
-                color = lightText,
-                fontWeight = FontWeight.Medium
+                text = "Inicia sesión para continuar",
+                fontSize = 14.sp,
+                color = mutedText,
+                textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-            // Tarjeta de Formulario de Login
+            // Tarjeta contenedora de los campos de credenciales
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = cardDark),
-                shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                colors = CardDefaults.cardColors(containerColor = cardBg),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
+                    modifier = Modifier.padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text(
-                        text = "Iniciar Sesión",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                    // Campo de entrada: Teléfono
+                    OutlinedTextField(
+                        value = telefono,
+                        onValueChange = { telefono = it }, // Actualizar variable de teléfono
+                        label = { Text("Teléfono", color = mutedText) },
+                        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = accentBlue) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = accentBlue,
+                            unfocusedBorderColor = mutedText.copy(alpha = 0.5f),
+                            focusedLabelColor = accentBlue,
+                            cursorColor = accentBlue
+                        ),
+                        modifier = Modifier.fillMaxWidth()
                     )
 
-                    // Campo de Teléfono
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            text = "NÚMERO DE TELÉFONO",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = lightText
-                        )
-                        OutlinedTextField(
-                            value = telefono,
-                            onValueChange = { telefono = it },
-                            placeholder = { Text("Ej. 4181234567", color = Color(0xFF64748B)) },
-                            leadingIcon = {
-                                Icon(Icons.Default.Phone, contentDescription = null, tint = primaryBlue)
-                            },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                    }
+                    // Campo de entrada: Contraseña
+                    OutlinedTextField(
+                        value = contrasena,
+                        onValueChange = { contrasena = it }, // Actualizar variable de contraseña
+                        label = { Text("Contraseña", color = mutedText) },
+                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = accentBlue) },
+                        trailingIcon = {
+                            IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) { // Conmutar icono de ojo
+                                Text(
+                                    text = if (isPasswordVisible) "👁️" else "🙈",
+                                    fontSize = 16.sp
+                                )
+                            }
+                        },
+                        singleLine = true,
+                        visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = accentBlue,
+                            unfocusedBorderColor = mutedText.copy(alpha = 0.5f),
+                            focusedLabelColor = accentBlue,
+                            cursorColor = accentBlue
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
 
-                    // Campo de Contraseña
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            text = "CONTRASEÑA",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = lightText
-                        )
-                        OutlinedTextField(
-                            value = contrasena,
-                            onValueChange = { contrasena = it },
-                            placeholder = { Text("••••••••", color = Color(0xFF64748B)) },
-                            leadingIcon = {
-                                Icon(Icons.Default.Lock, contentDescription = null, tint = primaryBlue)
-                            },
-                            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                    }
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                    if (errorMessage.isNotEmpty()) {
-                        Surface(
-                            color = Color(0xFFEF4444).copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = errorMessage,
-                                color = Color(0xFFFCA5A5),
-                                fontSize = 12.sp,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(10.dp)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    // Botón de Ingreso
+                    // Botón de Inicio de Sesión
                     Button(
                         onClick = {
+                            // Validar que ambos campos contengan texto
                             if (telefono.isBlank() || contrasena.isBlank()) {
-                                errorMessage = "Ingresa tu teléfono y contraseña para ingresar"
+                                Toast.makeText(context, "Ingresa teléfono y contraseña", Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
 
-                            isLoading = true
-                            errorMessage = ""
-
+                            isLoading = true // Activar rueda de progreso
                             thread {
                                 try {
-                                    val bodyJson = JSONObject().apply {
-                                        put("telefono", telefono.trim())
-                                        put("contrasena", contrasena)
-                                    }.toString()
-
                                     val url = java.net.URL("${ServerConfig.BASE_URL}/api/auth/login")
                                     val conn = url.openConnection() as java.net.HttpURLConnection
                                     applySslBypass(conn)
                                     conn.requestMethod = "POST"
-                                    conn.setRequestProperty("Content-Type", "application/json")
-                                    conn.connectTimeout = 6000
+                                    conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                                    conn.connectTimeout = 5000
                                     conn.doOutput = true
-                                    conn.outputStream.write(bodyJson.toByteArray(Charsets.UTF_8))
 
-                                    val code = conn.responseCode
-                                    val responseText = if (code == 200) {
-                                        conn.inputStream.bufferedReader().readText()
-                                    } else {
-                                        conn.errorStream?.bufferedReader()?.readText() ?: "Error de autenticación"
+                                    // Construir JSON con las credenciales
+                                    val body = JSONObject().apply {
+                                        put("telefono", telefono)
+                                        put("contrasena", contrasena)
                                     }
 
-                                    isLoading = false
+                                    // Escribir en la solicitud HTTP
+                                    conn.outputStream.use { os ->
+                                        os.write(body.toString().toByteArray(Charsets.UTF_8))
+                                    }
 
+                                    val code = conn.responseCode
                                     if (code == 200) {
-                                        val json = JSONObject(responseText)
-                                        val userObj = json.getJSONObject("user")
-                                        val session = UserSession(
+                                        val resp = conn.inputStream.bufferedReader().readText()
+                                        val obj = JSONObject(resp)
+                                        val userObj = obj.getJSONObject("usuario") // Extraer objeto usuario
+
+                                        // Instanciar objeto de sesión del usuario
+                                        val user = UserSession(
                                             idUser = userObj.getInt("id_user"),
                                             nombreCompleto = userObj.getString("nombre_completo"),
                                             telefono = userObj.getString("telefono"),
                                             rol = userObj.getInt("rol"),
                                             estatus = userObj.getInt("estatus")
                                         )
+
+                                        // Notificar éxito en el hilo de interfaz de usuario
                                         (context as? android.app.Activity)?.runOnUiThread {
-                                            Toast.makeText(context, "Bienvenido ${session.nombreCompleto}", Toast.LENGTH_SHORT).show()
-                                            onLoginSuccess(session)
+                                            isLoading = false
+                                            onLoginSuccess(user) // Invocar callback con la sesión
                                         }
                                     } else {
-                                        val errObj = try { JSONObject(responseText) } catch (e: Exception) { null }
-                                        val errorMsg = errObj?.optString("error") ?: "Credenciales incorrectas"
                                         (context as? android.app.Activity)?.runOnUiThread {
-                                            errorMessage = errorMsg
+                                            isLoading = false
+                                            Toast.makeText(context, "Credenciales incorrectas ($code)", Toast.LENGTH_SHORT).show()
                                         }
                                     }
                                 } catch (e: Exception) {
-                                    isLoading = false
                                     (context as? android.app.Activity)?.runOnUiThread {
-                                        errorMessage = "Error de conexión: ${e.message}"
+                                        isLoading = false
+                                        Toast.makeText(context, "Error de red: ${e.message}", Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             }
                         },
+                        enabled = !isLoading,
+                        colors = ButtonDefaults.buttonColors(containerColor = accentBlue),
+                        shape = RoundedCornerShape(10.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(52.dp),
-                        enabled = !isLoading,
-                        colors = ButtonDefaults.buttonColors(containerColor = primaryBlue),
-                        shape = RoundedCornerShape(12.dp)
+                            .height(48.dp)
                     ) {
                         if (isLoading) {
-                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                         } else {
-                            Text("Ingresar al Sistema", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text(text = "Iniciar Sesión", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -1306,52 +1619,53 @@ fun LoginScreen(
 
 ---
 
-## 9. Carpeta UI - Panel de Administración (`ui/admin`)
+## 9. Carpeta UI - Panel Administrador (`ui/admin`)
 
-Esta carpeta contiene las actividades y pantallas exclusivas para los usuarios con rol de Administrador.
+Esta carpeta concentra las pantallas destinadas a los administradores del sistema, permitiendo la supervisión global de pedidos, métricas de entregas y registro de repartidores.
 
 ---
 
 ### `mobile/src/main/java/mx/utng/deliverytrack/mobile/ui/admin/AdminDashboardScreen.kt`
-**Funcionalidad:** Panel de control de administración. Presenta un listado completo de pedidos activos, filtros dinámicos por estado y por repartidor asignado, refresco automático de pantalla al volver mediante `LifecycleEventObserver`, y capacidad de cancelar pedidos directamente.
+**Funcionalidad:** Panel de control principal del Administrador. Muestra métricas clave (Total, Pendientes, En Camino, Entregados, Cancelados), lista de pedidos con filtrado por estado, barra de búsqueda por cliente/dirección, botones de acción rápida para crear pedidos o gestionar repartidores y opción de cerrar sesión.
 
 ```kotlin
 package mx.utng.deliverytrack.mobile.ui.admin
 
 import android.content.Intent
 import android.widget.Toast
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
+import mx.utng.deliverytrack.mobile.data.models.Pedido
 import mx.utng.deliverytrack.mobile.ui.auth.UserSession
 import mx.utng.deliverytrack.shared.config.ServerConfig
 import org.json.JSONArray
-import org.json.JSONObject
 import kotlin.concurrent.thread
 
+/**
+ * Función privada para deshabilitar verificación estricta de SSL en entornos locales.
+ *
+ * @param conn Conexión HttpURLConnection.
+ * @return Unit.
+ */
 private fun applySslBypass(conn: java.net.HttpURLConnection) {
     if (conn is javax.net.ssl.HttpsURLConnection) {
         try {
@@ -1370,125 +1684,85 @@ private fun applySslBypass(conn: java.net.HttpURLConnection) {
     }
 }
 
-data class AdminPedidoItem(
-    val idPedido: Int,
-    val nombreCliente: String,
-    val direccion: String,
-    val repartidorNombre: String,
-    val estatus: Int
-)
-
+/**
+ * Pantalla principal del Dashboard de Administrador en Jetpack Compose.
+ *
+ * @param userSession Datos de la sesión activa del Administrador.
+ * @param onCrearPedidoClick Callback para abrir la pantalla de creación de pedidos.
+ * @param onGestionUsuariosClick Callback para navegar a la pantalla de gestión de usuarios.
+ * @param onLogoutClick Callback para cerrar la sesión actual.
+ * @return Unit (Renderiza la vista completa del panel).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminDashboardScreen(
-    userSession: UserSession,
-    onCrearPedidoClick: () -> Unit,
-    onGestionUsuariosClick: () -> Unit,
-    onLogoutClick: () -> Unit
+    userSession: UserSession,         // Objeto con la sesión del Administrador
+    onCrearPedidoClick: () -> Unit,   // Callback para el botón flotante de crear pedido
+    onGestionUsuariosClick: () -> Unit, // Callback para el icono de gestionar usuarios
+    onLogoutClick: () -> Unit        // Callback para la opción de salir
 ) {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-    var pedidos by remember { mutableStateOf<List<AdminPedidoItem>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var errorMessage by remember { mutableStateOf("") }
+    val context = LocalContext.current // Contexto para lanzar intenciones (Intents)
+    var pedidos by remember { mutableStateOf<List<Pedido>>(emptyList()) } // Lista reactiva de pedidos
+    var isLoading by remember { mutableStateOf(true) } // Estado de progreso
+    var searchQuery by remember { mutableStateOf("") } // Cadena de texto de búsqueda
+    var selectedFilterStatus by remember { mutableStateOf<Int?>(null) } // Filtro por estado
 
     val primaryBlue = Color(0xFF1A3A6B)
+    val bgGray = Color(0xFFF8FAFC)
 
-    // Consulta de pedidos activos para administración
-    fun fetchAdminPedidos() {
-        isLoading = true
+    // Función interna para realizar la carga de los pedidos desde la API REST
+    fun loadPedidos() {
+        isLoading = true // Activar rueda de progreso
         thread {
             try {
-                val url = java.net.URL("${ServerConfig.BASE_URL}/api/pedidos/admin/activos")
+                val url = java.net.URL("${ServerConfig.BASE_URL}/api/pedidos")
                 val conn = url.openConnection() as java.net.HttpURLConnection
                 applySslBypass(conn)
                 conn.requestMethod = "GET"
                 conn.connectTimeout = 5000
 
                 if (conn.responseCode == 200) {
-                    val text = conn.inputStream.bufferedReader().readText()
-                    val arr = JSONArray(text)
-                    val list = (0 until arr.length()).map {
-                        val obj = arr.getJSONObject(it)
-                        AdminPedidoItem(
-                            idPedido = obj.getInt("id_pedido"),
-                            nombreCliente = obj.getString("nombre_cliente"),
-                            direccion = obj.getString("direccion"),
-                            repartidorNombre = if (obj.isNull("repartidor_nombre")) "Sin asignar" else obj.getString("repartidor_nombre"),
-                            estatus = obj.getInt("estatus")
+                    val resp = conn.inputStream.bufferedReader().readText()
+                    val arr = JSONArray(resp)
+                    val list = (0 until arr.length()).map { index ->
+                        val obj = arr.getJSONObject(index)
+                        Pedido(
+                            id = obj.getInt("id_pedido"),
+                            nombreCliente = obj.optString("nombre_cliente", ""),
+                            telefono = obj.optString("telefono", ""),
+                            direccion = obj.optString("direccion", ""),
+                            referenciaLugar = obj.optString("referencia_lugar", ""),
+                            descripcionPedido = obj.optString("descripcion_pedido", ""),
+                            idRepartidor = obj.optInt("id_repartidor", 0),
+                            estatus = obj.optInt("estatus", 1)
                         )
                     }
-                    pedidos = list
-                } else {
-                    errorMessage = "Error al cargar pedidos del sistema"
-                }
-            } catch (e: Exception) {
-                errorMessage = "Error de conexión: ${e.message}"
-            } finally {
-                isLoading = false
-            }
-        }
-    }
-
-    // Cancelar un pedido activo
-    fun cancelarPedido(orderId: Int) {
-        thread {
-            try {
-                val body = JSONObject().apply {
-                    put("estatus", 4) // Estatus 4: Cancelado
-                }.toString()
-
-                val url = java.net.URL("${ServerConfig.BASE_URL}/api/pedidos/$orderId")
-                val conn = url.openConnection() as java.net.HttpURLConnection
-                applySslBypass(conn)
-                conn.requestMethod = "PUT"
-                conn.setRequestProperty("Content-Type", "application/json")
-                conn.doOutput = true
-                conn.outputStream.write(body.toByteArray(Charsets.UTF_8))
-
-                if (conn.responseCode == 200) {
+                    // Actualizar el estado de Compose en el hilo principal
                     (context as? android.app.Activity)?.runOnUiThread {
-                        Toast.makeText(context, "Pedido #$orderId cancelado", Toast.LENGTH_SHORT).show()
+                        pedidos = list
+                        isLoading = false
                     }
-                    fetchAdminPedidos()
+                } else {
+                    (context as? android.app.Activity)?.runOnUiThread { isLoading = false }
                 }
             } catch (e: Exception) {
-                (context as? android.app.Activity)?.runOnUiThread {
-                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
+                (context as? android.app.Activity)?.runOnUiThread { isLoading = false }
             }
         }
     }
 
-    // Recarga automática al volver a la pantalla (ON_RESUME)
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                fetchAdminPedidos()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
+    // Efecto secundario ejecutado al renderizar el composable por primera vez
+    LaunchedEffect(Unit) {
+        loadPedidos()
     }
 
-    var selectedEstatusFilter by remember { mutableStateOf<Int?>(null) }
-    var selectedRepartidorFilter by remember { mutableStateOf("Todos los repartidores") }
-    var repartidorDropdownExpanded by remember { mutableStateOf(false) }
-
-    val repartidoresDisponibles = remember(pedidos) {
-        listOf("Todos los repartidores") + pedidos.map { it.repartidorNombre }.distinct().sorted()
-    }
-
-    val filteredPedidos = remember(pedidos, selectedEstatusFilter, selectedRepartidorFilter) {
-        pedidos.filter { item ->
-            val matchesStatus = (selectedEstatusFilter == null || item.estatus == selectedEstatusFilter)
-            val matchesRepartidor = (selectedRepartidorFilter == "Todos los repartidores" ||
-                                     item.repartidorNombre.equals(selectedRepartidorFilter, ignoreCase = true))
-            matchesStatus && matchesRepartidor
-        }
+    // Evaluación de filtrado de la lista de pedidos según búsqueda e indicador de estado
+    val filteredPedidos = pedidos.filter { p ->
+        val matchesSearch = p.nombreCliente.contains(searchQuery, ignoreCase = true) ||
+                p.direccion.contains(searchQuery, ignoreCase = true) ||
+                p.id.toString().contains(searchQuery)
+        val matchesStatus = selectedFilterStatus == null || p.estatus == selectedFilterStatus
+        matchesSearch && matchesStatus
     }
 
     Scaffold(
@@ -1496,104 +1770,112 @@ fun AdminDashboardScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("DeliveryTrack", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp)
-                        Text("Gestión de Pedidos", fontSize = 11.sp, color = Color(0xFFCBD5E1))
+                        Text("Panel Administrador", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp)
+                        Text("Hola, ${userSession.nombreCompleto}", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
                     }
                 },
                 actions = {
-                    Button(
-                        onClick = onCrearPedidoClick,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Nuevo", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 13.sp)
+                    // Botón para refrescar manualmente
+                    IconButton(onClick = { loadPedidos() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Actualizar", tint = Color.White)
                     }
-                    IconButton(onClick = onLogoutClick) {
-                        Icon(Icons.Default.ExitToApp, contentDescription = "Cerrar sesión", tint = Color.White)
+                    // Botón para ingresar a Gestión de Usuarios
+                    IconButton(onClick = onGestionUsuariosClick) {
+                        Icon(Icons.Default.Person, contentDescription = "Usuarios", tint = Color.White)
+                    }
+                    // Botón de texto para cerrar la sesión
+                    TextButton(onClick = onLogoutClick) {
+                        Text("Salir", color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = primaryBlue)
             )
         },
-        bottomBar = {
-            NavigationBar(containerColor = Color.White) {
-                NavigationBarItem(
-                    selected = true,
-                    onClick = {},
-                    label = { Text("Pedidos") },
-                    icon = { Icon(Icons.Default.List, contentDescription = "Pedidos") }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = onGestionUsuariosClick,
-                    label = { Text("Usuarios") },
-                    icon = { Icon(Icons.Default.Person, contentDescription = "Usuarios") }
-                )
+        floatingActionButton = {
+            // Botón Flotante para crear un nuevo pedido
+            FloatingActionButton(
+                onClick = onCrearPedidoClick,
+                containerColor = primaryBlue,
+                contentColor = Color.White
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Crear Pedido")
             }
         }
-    ) { padding ->
-        Box(
+    ) { innerPadding ->
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .background(Color(0xFFF8FAFC))
+                .padding(innerPadding)
+                .background(bgGray)
+                .padding(16.dp)
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                // Filtro desplegable por repartidor
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = { repartidorDropdownExpanded = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Repartidor: $selectedRepartidorFilter", fontSize = 13.sp, color = Color(0xFF1E293B))
-                            Text("▼", fontSize = 11.sp, color = Color.Gray)
-                        }
-                    }
+            // Buscador por texto interactivo
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it }, // Actualizar variable de búsqueda
+                placeholder = { Text("Buscar por cliente, dirección o ID...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp)
+            )
 
-                    DropdownMenu(
-                        expanded = repartidorDropdownExpanded,
-                        onDismissRequest = { repartidorDropdownExpanded = false }
-                    ) {
-                        repartidoresDisponibles.forEach { repNombre ->
-                            DropdownMenuItem(
-                                text = { Text(repNombre) },
-                                onClick = {
-                                    selectedRepartidorFilter = repNombre
-                                    repartidorDropdownExpanded = false
-                                }
-                            )
-                        }
-                    }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Fila con 3 tarjetas de métricas cuantitativas del sistema
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                StatCard(
+                    label = "Total",
+                    count = pedidos.size.toString(),
+                    color = Color(0xFF3B82F6),
+                    modifier = Modifier.weight(1f)
+                )
+                StatCard(
+                    label = "En Camino",
+                    count = pedidos.count { it.estatus == 3 }.toString(),
+                    color = Color(0xFFF59E0B),
+                    modifier = Modifier.weight(1f)
+                )
+                StatCard(
+                    label = "Entregados",
+                    count = pedidos.count { it.estatus == 6 }.toString(),
+                    color = Color(0xFF10B981),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text("Lista de Pedidos", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = primaryBlue)
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Renderizado condicional según el progreso de carga
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
                 }
-
-                // Lista de pedidos filtrada
+            } else if (filteredPedidos.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No se encontraron pedidos", color = Color.Gray)
+                }
+            } else {
+                // Lista perezosa (LazyColumn) para optimizar el rendimiento del renderizado de tarjetas
                 LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    items(filteredPedidos) { item ->
-                        AdminPedidoRow(
-                            item = item,
-                            onPedidoClick = { orderId ->
+                    items(filteredPedidos) { pedido ->
+                        AdminPedidoItem(
+                            pedido = pedido,
+                            onClick = { // Lanzar la actividad de detalle al presionar
                                 val intent = Intent(context, AdminDetallePedidoActivity::class.java).apply {
-                                    putExtra(AdminDetallePedidoActivity.EXTRA_ORDER_ID, orderId)
+                                    putExtra(AdminDetallePedidoActivity.EXTRA_ORDER_ID, pedido.id)
                                 }
                                 context.startActivity(intent)
-                            },
-                            onCancelarClick = { orderId ->
-                                cancelarPedido(orderId)
                             }
                         )
                     }
@@ -1603,62 +1885,116 @@ fun AdminDashboardScreen(
     }
 }
 
+/**
+ * Tarjeta de visualización de métrica/estadística individual para el dashboard del administrador.
+ * 
+ * @param label Etiqueta o título textual que describe la métrica (ej. "Total", "En Camino", "Entregados").
+ * @param count Valor numérico como cadena de texto que representa el conteo de pedidos.
+ * @param color Color primario de acento aplicado al número representativo.
+ * @param modifier Modificador de layout Compose para ajustar el tamaño y pesos de distribución.
+ * @return Unit (Renderiza un componente UI de tarjeta en Compose).
+ */
 @Composable
-fun AdminPedidoRow(
-    item: AdminPedidoItem,
-    onPedidoClick: (Int) -> Unit,
-    onCancelarClick: (Int) -> Unit
+private fun StatCard(
+    label: String, // Texto descriptivo del indicador
+    count: String, // Cantidad numérica a mostrar
+    color: Color,  // Color de resalte para el texto numérico
+    modifier: Modifier = Modifier // Modificador por defecto para estructurar el diseño
 ) {
-    val (statusText, statusColor) = when (item.estatus) {
-        1 -> "Aceptado" to Color(0xFF2563EB)
-        2 -> "Pendiente" to Color(0xFFE65100)
-        3 -> "En ruta" to Color(0xFF16A34A)
-        4 -> "Cancelado" to Color(0xFFDC2626)
-        5 -> "Retrasado" to Color(0xFFD97706)
-        6 -> "Entregado" to Color(0xFF15803D)
-        else -> "Estado ${item.estatus}" to Color.Gray
+    // Contenedor tipo Tarjeta de Material 3 con elevación y fondo blanco
+    Card(
+        modifier = modifier, // Aplicar modificador de tamaño asignado
+        colors = CardDefaults.cardColors(containerColor = Color.White), // Color de fondo blanco puro
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp) // Elevación de sombra de 2dp
+    ) {
+        // Columna vertical para alinear el contador y la etiqueta centrados
+        Column(
+            modifier = Modifier.padding(12.dp), // Espaciado interno de 12dp en todos los bordes
+            horizontalAlignment = Alignment.CenterHorizontally // Alineación horizontal centrada
+        ) {
+            // Texto numérico grande con estilo en negrita y color personalizado
+            Text(
+                text = count, // Valor numérico de la estadística
+                fontSize = 20.sp, // Tamaño de fuente en puntos de escala (20sp)
+                fontWeight = FontWeight.Bold, // Estilo tipográfico en negrita
+                color = color // Asignación del color de acento
+            )
+            
+            // Texto descriptivo secundario en tono gris
+            Text(
+                text = label, // Nombre o etiqueta de la estadística
+                fontSize = 11.sp, // Tamaño de fuente pequeño (11sp)
+                color = Color.Gray // Color gris neutro para texto secundario
+            )
+        }
+    }
+}
+
+/**
+ * Componente que renderiza una tarjeta individual de pedido en la lista del administrador.
+ *
+ * @param pedido Instancia del objeto Pedido a mostrar.
+ * @param onClick Callback invocado al pulsar sobre la tarjeta.
+ * @return Unit.
+ */
+@Composable
+private fun AdminPedidoItem(
+    pedido: Pedido,     // Objeto de pedido a presentar
+    onClick: () -> Unit // Callback de clic
+) {
+    // Asignación de color según el código de estatus del pedido
+    val statusColor = when (pedido.estatus) {
+        1 -> Color(0xFF3B82F6) // Aceptado (Azul)
+        2 -> Color(0xFF6B7280) // Pendiente (Gris)
+        3 -> Color(0xFFF59E0B) // En camino (Naranja)
+        4 -> Color(0xFFEF4444) // Cancelado (Rojo)
+        5 -> Color(0xFF8B5CF6) // Retrasado (Púrpura)
+        6 -> Color(0xFF10B981) // Entregado (Verde)
+        else -> Color.Gray
+    }
+
+    // Texto representativo del estatus
+    val statusText = when (pedido.estatus) {
+        1 -> "Aceptado"
+        2 -> "Pendiente"
+        3 -> "En Camino"
+        4 -> "Cancelado"
+        5 -> "Retrasado"
+        6 -> "Entregado"
+        else -> "Desconocido"
     }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onPedidoClick(item.idPedido) },
-        shape = RoundedCornerShape(10.dp),
+            .clickable { onClick() }, // Hacer clicable la tarjeta completa
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("#${item.idPedido}", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                Text("${item.repartidorNombre} • Cliente: ${item.nombreCliente}", fontSize = 13.sp, color = Color.DarkGray)
-                Text(item.direccion, fontSize = 12.sp, color = Color.Gray)
+                Text(text = "Pedido #${pedido.id}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text(text = pedido.nombreCliente, fontSize = 14.sp, color = Color.Black)
+                Text(text = pedido.direccion, fontSize = 12.sp, color = Color.Gray)
             }
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    color = statusColor.copy(alpha = 0.15f),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = statusText,
-                        color = statusColor,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
-
-                if (item.estatus != 4 && item.estatus != 6) {
-                    IconButton(onClick = { onCancelarClick(item.idPedido) }) {
-                        Icon(Icons.Default.Close, contentDescription = "Cancelar pedido", tint = Color(0xFFDC2626))
-                    }
-                }
+            // Etiqueta visual tipo insignia con el color de estado
+            Surface(
+                color = statusColor.copy(alpha = 0.15f), // Fondo translúcido del color del estado
+                shape = RoundedCornerShape(20.dp)
+            ) {
+                Text(
+                    text = statusText,
+                    color = statusColor,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                )
             }
         }
     }
@@ -1668,7 +2004,7 @@ fun AdminPedidoRow(
 ---
 
 ### `mobile/src/main/java/mx/utng/deliverytrack/mobile/ui/admin/AdminDetallePedidoActivity.kt`
-**Funcionalidad:** Muestra el detalle completo de un pedido individual para el administrador. Incluye la información del cliente, dirección, repartidor asignado, botones de acción para editar o cancelar el pedido, e integración con Google Maps para lanzar la ruta GPS en la app externa.
+**Funcionalidad:** Vista detallada de un pedido para el Administrador. Permite ver el historial de estatus, cambiar el estado del pedido, reasignar repartidor y lanzar la pantalla de edición del pedido.
 
 ```kotlin
 package mx.utng.deliverytrack.mobile.ui.admin
@@ -1683,28 +2019,25 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import mx.utng.deliverytrack.mobile.ui.NuevoPedidoActivity
 import mx.utng.deliverytrack.shared.config.ServerConfig
 import org.json.JSONObject
 import kotlin.concurrent.thread
 
+/**
+ * Aplicación de confianza SSL para peticiones del administrador.
+ *
+ * @param conn Conexión HttpURLConnection.
+ * @return Unit.
+ */
 private fun applySslBypass(conn: java.net.HttpURLConnection) {
     if (conn is javax.net.ssl.HttpsURLConnection) {
         try {
@@ -1723,56 +2056,65 @@ private fun applySslBypass(conn: java.net.HttpURLConnection) {
     }
 }
 
-data class AdminOrderDetail(
-    val idPedido: Int,
-    val nombreCliente: String,
-    val telefono: String,
-    val direccion: String,
-    val referencia: String,
-    val descripcion: String,
-    val estatus: Int,
-    val repartidorNombre: String,
-    val repartidorTelefono: String
-)
-
+/**
+ * Actividad para la consulta detallada y gestión de estado de un pedido específico por el Administrador.
+ */
 class AdminDetallePedidoActivity : ComponentActivity() {
 
     companion object {
+        /** Clave extra para passar el ID del pedido */
         const val EXTRA_ORDER_ID = "extra_order_id"
     }
 
+    /**
+     * Inicializador de la actividad.
+     *
+     * @param savedInstanceState Estado previo guardado.
+     * @return Unit.
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val orderId = intent.getIntExtra(EXTRA_ORDER_ID, -1)
+        val orderId = intent.getIntExtra(EXTRA_ORDER_ID, -1) // Extraer ID de pedido
 
         setContent {
             MaterialTheme {
                 AdminDetallePedidoScreen(
                     orderId = orderId,
-                    onBackClick = { finish() }
+                    onBackClick = { finish() }, // Regresar a la pantalla anterior
+                    onEditClick = { id -> // Abrir la pantalla de edición
+                        val intent = Intent(this, NuevoPedidoActivity::class.java).apply {
+                            putExtra(NuevoPedidoActivity.EXTRA_EDIT_ORDER_ID, id)
+                        }
+                        startActivity(intent)
+                    }
                 )
             }
         }
     }
 }
 
+/**
+ * Componente Composable que renderiza los datos detallados del pedido y botones para modificar el estatus.
+ *
+ * @param orderId ID del pedido consultado.
+ * @param onBackClick Callback para el botón de regreso.
+ * @param onEditClick Callback para el botón de editar.
+ * @return Unit.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminDetallePedidoScreen(
     orderId: Int,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onEditClick: (Int) -> Unit
 ) {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-    var orderDetail by remember { mutableStateOf<AdminOrderDetail?>(null) }
+    var pedidoJson by remember { mutableStateOf<JSONObject?>(null) }
     var isLoading by remember { mutableStateOf(true) }
-    var errorMessage by remember { mutableStateOf("") }
-    var isCanceling by remember { mutableStateOf(false) }
 
     val primaryBlue = Color(0xFF1A3A6B)
 
-    fun fetchDetails() {
+    // Función interna para cargar la información del pedido
+    fun loadOrderDetail() {
         isLoading = true
         thread {
             try {
@@ -1780,486 +2122,188 @@ fun AdminDetallePedidoScreen(
                 val conn = url.openConnection() as java.net.HttpURLConnection
                 applySslBypass(conn)
                 conn.requestMethod = "GET"
+                conn.connectTimeout = 5000
 
                 if (conn.responseCode == 200) {
                     val text = conn.inputStream.bufferedReader().readText()
                     val obj = JSONObject(text)
-                    orderDetail = AdminOrderDetail(
-                        idPedido = obj.getInt("id_pedido"),
-                        nombreCliente = obj.getString("nombre_cliente"),
-                        telefono = obj.getString("telefono"),
-                        direccion = obj.getString("direccion"),
-                        referencia = obj.optString("referencia_lugar", ""),
-                        descripcion = obj.optString("descripcion_pedido", ""),
-                        estatus = obj.getInt("estatus"),
-                        repartidorNombre = if (obj.isNull("repartidor_nombre")) "Sin asignar" else obj.getString("repartidor_nombre"),
-                        repartidorTelefono = obj.optString("repartidor_telefono", "")
-                    )
-                } else {
-                    errorMessage = "Error al cargar detalle del pedido"
+                    pedidoJson = obj // Guardar objeto JSON recibido
                 }
-            } catch (e: Exception) {
-                errorMessage = "Error de red: ${e.message}"
+            } catch (_: Exception) {
             } finally {
-                isLoading = false
+                isLoading = false // Finalizar indicador de carga
             }
         }
     }
 
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                fetchDetails()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
+    LaunchedEffect(orderId) {
+        loadOrderDetail()
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Detalle del Pedido #$orderId", fontWeight = FontWeight.Bold, color = Color.White) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Text("←", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = primaryBlue)
-            )
-        }
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(Color(0xFFF8FAFC))
-        ) {
-            orderDetail?.let { item ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    // Tarjeta de Rastreo GPS en Mapa (Google Maps)
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A))
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.fillMaxWidth().padding(14.dp)
-                        ) {
-                            Text("RASTREO GPS EN MAPA", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Button(
-                                onClick = {
-                                    val encodedAddress = java.net.URLEncoder.encode(item.direccion, "UTF-8")
-                                    val webMapIntent = Intent(
-                                        Intent.ACTION_VIEW,
-                                        android.net.Uri.parse("https://www.google.com/maps/search/?api=1&query=$encodedAddress")
-                                    )
-                                    context.startActivity(webMapIntent)
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
-                            ) {
-                                Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color.White)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Ver Ruta GPS en Google Maps", color = Color.White)
-                            }
-                        }
-                    }
-
-                    // Botones de acción: Editar y Cancelar
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Button(
-                            onClick = {
-                                val intent = Intent(context, NuevoPedidoActivity::class.java).apply {
-                                    putExtra(NuevoPedidoActivity.EXTRA_EDIT_ORDER_ID, item.idPedido)
-                                }
-                                context.startActivity(intent)
-                            },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
-                        ) {
-                            Icon(Icons.Default.Edit, contentDescription = null, tint = Color.White)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Editar pedido", color = Color.White)
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-```
-
----
-
-### `mobile/src/main/java/mx/utng/deliverytrack/mobile/ui/admin/GestionUsuariosActivity.kt`
-**Funcionalidad:** Interfaz completa para la administración de usuarios del sistema (administradores y repartidores). Permite consultar la lista de usuarios, crear nuevos usuarios, editar datos/roles, y aplicar una eliminación lógica (suspensión de cuenta) a través de un diálogo de confirmación `AlertDialog`.
-
-```kotlin
-package mx.utng.deliverytrack.mobile.ui.admin
-
-import android.os.Bundle
-import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import mx.utng.deliverytrack.shared.config.ServerConfig
-import org.json.JSONArray
-import org.json.JSONObject
-import kotlin.concurrent.thread
-
-private fun applySslBypass(conn: java.net.HttpURLConnection) {
-    if (conn is javax.net.ssl.HttpsURLConnection) {
-        try {
-            val trustAllCerts = arrayOf<javax.net.ssl.TrustManager>(
-                object : javax.net.ssl.X509TrustManager {
-                    override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = arrayOf()
-                    override fun checkClientTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
-                    override fun checkServerTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
-                }
-            )
-            val sc = javax.net.ssl.SSLContext.getInstance("SSL")
-            sc.init(null, trustAllCerts, java.security.SecureRandom())
-            conn.sslSocketFactory = sc.socketFactory
-            conn.hostnameVerifier = javax.net.ssl.HostnameVerifier { _, _ -> true }
-        } catch (_: Exception) {}
-    }
-}
-
-data class UserItem(
-    val idUser: Int,
-    val nombreCompleto: String,
-    val telefono: String,
-    val rol: Int,
-    val estatus: Int
-)
-
-class GestionUsuariosActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            MaterialTheme {
-                GestionUsuariosScreen(onBackClick = { finish() })
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun GestionUsuariosScreen(onBackClick: () -> Unit) {
-    val context = LocalContext.current
-    var usuarios by remember { mutableStateOf<List<UserItem>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var errorMessage by remember { mutableStateOf("") }
-    
-    var showDialogUser by remember { mutableStateOf(false) }
-    var userToEdit by remember { mutableStateOf<UserItem?>(null) }
-    var userToDelete by remember { mutableStateOf<UserItem?>(null) }
-
-    val primaryBlue = Color(0xFF1A3A6B)
-
-    fun fetchUsuarios() {
-        isLoading = true
-        thread {
-            try {
-                val url = java.net.URL("${ServerConfig.BASE_URL}/api/usuarios")
-                val conn = url.openConnection() as java.net.HttpURLConnection
-                applySslBypass(conn)
-                conn.requestMethod = "GET"
-
-                if (conn.responseCode == 200) {
-                    val text = conn.inputStream.bufferedReader().readText()
-                    val arr = JSONArray(text)
-                    val list = (0 until arr.length()).map {
-                        val obj = arr.getJSONObject(it)
-                        UserItem(
-                            idUser = obj.getInt("id_user"),
-                            nombreCompleto = obj.getString("nombre_completo"),
-                            telefono = obj.getString("telefono"),
-                            rol = obj.getInt("rol"),
-                            estatus = obj.getInt("estatus")
-                        )
-                    }
-                    usuarios = list
-                } else {
-                    errorMessage = "Error al obtener usuarios"
-                }
-            } catch (e: Exception) {
-                errorMessage = "Error de red: ${e.message}"
-            } finally {
-                isLoading = false
-            }
-        }
-    }
-
-    // Eliminación lógica de usuario
-    fun deleteUsuarioLogico(user: UserItem) {
-        thread {
-            try {
-                val url = java.net.URL("${ServerConfig.BASE_URL}/api/usuarios/${user.idUser}")
-                val conn = url.openConnection() as java.net.HttpURLConnection
-                applySslBypass(conn)
-                conn.requestMethod = "DELETE"
-
-                if (conn.responseCode == 200) {
-                    (context as? android.app.Activity)?.runOnUiThread {
-                        Toast.makeText(context, "Usuario suspendido exitosamente", Toast.LENGTH_SHORT).show()
-                    }
-                    fetchUsuarios()
-                }
-            } catch (e: Exception) {
-                (context as? android.app.Activity)?.runOnUiThread {
-                    Toast.makeText(context, "Error al eliminar: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        fetchUsuarios()
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Gestión de Usuarios", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp) },
+                title = { Text("Detalle Pedido #$orderId", color = Color.White, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Text("←", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                     }
                 },
                 actions = {
-                    Button(
-                        onClick = {
-                            userToEdit = null
-                            showDialogUser = true
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
-                    ) {
-                        Text("+ Nuevo", color = Color.White, fontWeight = FontWeight.Bold)
+                    TextButton(onClick = { onEditClick(orderId) }) { // Botón Editar en la barra superior
+                        Text("Editar", color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = primaryBlue)
             )
         }
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(Color(0xFFF1F5F9))
-        ) {
-            LazyColumn(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) { innerPadding ->
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (pedidoJson == null) {
+            Box(modifier = Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
+                Text("No se pudo cargar la información del pedido")
+            }
+        } else {
+            val obj = pedidoJson!!
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .background(Color(0xFFF8FAFC))
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(usuarios) { user ->
-                    UserRowCard(
-                        user = user,
-                        onEditClick = {
-                            userToEdit = user
-                            showDialogUser = true
-                        },
-                        onDeleteClick = {
-                            userToDelete = user
-                        }
-                    )
-                }
-            }
-
-            // Diálogo modal de formulario para crear/editar usuario
-            if (showDialogUser) {
-                UsuarioFormDialog(
-                    userToEdit = userToEdit,
-                    onDismiss = {
-                        showDialogUser = false
-                        userToEdit = null
-                    },
-                    onSuccess = {
-                        showDialogUser = false
-                        userToEdit = null
-                        fetchUsuarios()
+                // Tarjeta con detalles del cliente
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Información del Cliente", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = primaryBlue)
+                        Text("Cliente: ${obj.optString("nombre_cliente")}")
+                        Text("Teléfono: ${obj.optString("telefono")}")
+                        Text("Dirección: ${obj.optString("direccion")}")
+                        Text("Referencia: ${obj.optString("referencia_lugar")}")
+                        Text("Descripción: ${obj.optString("descripcion_pedido")}")
                     }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun UserRowCard(
-    user: UserItem,
-    onEditClick: () -> Unit,
-    onDeleteClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column {
-                Text(user.nombreCompleto, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                Text("Tel: ${user.telefono} • Rol: ${if (user.rol == 1) "Admin" else "Repartidor"}", fontSize = 12.sp, color = Color.Gray)
-            }
-            Row {
-                IconButton(onClick = onEditClick) {
-                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color(0xFF2563EB))
                 }
-                IconButton(onClick = onDeleteClick) {
-                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color(0xFFEF4444))
-                }
-            }
-        }
-    }
-}
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun UsuarioFormDialog(
-    userToEdit: UserItem?,
-    onDismiss: () -> Unit,
-    onSuccess: () -> Unit
-) {
-    val isEditMode = (userToEdit != null)
-    var nombre by remember { mutableStateOf(userToEdit?.nombreCompleto ?: "") }
-    var telefono by remember { mutableStateOf(userToEdit?.telefono ?: "") }
-    var contrasena by remember { mutableStateOf("") }
-    var rolSeleccionado by remember { mutableStateOf(userToEdit?.rol ?: 2) }
+                // Tarjeta para cambiar el estatus del pedido
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Cambiar Estado del Pedido", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = primaryBlue)
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (isEditMode) "Editar Usuario" else "Nuevo Usuario", fontWeight = FontWeight.Bold) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre completo") })
-                OutlinedTextField(value = telefono, onValueChange = { telefono = it }, label = { Text("Teléfono") })
-                OutlinedTextField(
-                    value = contrasena,
-                    onValueChange = { contrasena = it },
-                    label = { Text("Contraseña") },
-                    visualTransformation = PasswordVisualTransformation()
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    thread {
-                        try {
-                            val body = JSONObject().apply {
-                                put("nombre_completo", nombre.trim())
-                                put("telefono", telefono.trim())
-                                if (contrasena.isNotBlank()) put("contrasena", contrasena)
-                                put("rol", rolSeleccionado)
-                                put("estatus", userToEdit?.estatus ?: 1)
-                            }.toString()
+                        val currentStatus = obj.optInt("estatus", 1)
+                        Text("Estado actual: $currentStatus")
 
-                            val urlString = if (isEditMode) "${ServerConfig.BASE_URL}/api/usuarios/${userToEdit?.idUser}" else "${ServerConfig.BASE_URL}/api/usuarios"
-                            val url = java.net.URL(urlString)
-                            val conn = url.openConnection() as java.net.HttpURLConnection
-                            applySslBypass(conn)
-                            conn.requestMethod = if (isEditMode) "PUT" else "POST"
-                            conn.setRequestProperty("Content-Type", "application/json")
-                            conn.doOutput = true
-                            conn.outputStream.write(body.toByteArray(Charsets.UTF_8))
-
-                            if (conn.responseCode == 200 || conn.responseCode == 201) {
-                                onSuccess()
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Button(
+                                onClick = { updateStatus(orderId, 3) { loadOrderDetail() } }, // Cambiar a 'En camino' (3)
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B))
+                            ) {
+                                Text("En Camino")
                             }
-                        } catch (_: Exception) {}
+                            Button(
+                                onClick = { updateStatus(orderId, 6) { loadOrderDetail() } }, // Cambiar a 'Entregado' (6)
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
+                            ) {
+                                Text("Entregado")
+                            }
+                        }
                     }
                 }
-            ) {
-                Text(if (isEditMode) "Editar" else "Guardar")
             }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
-    )
+        }
+    }
+}
+
+/**
+ * Función auxiliar privada para enviar la petición PUT de cambio de estatus a la API REST.
+ *
+ * @param orderId ID del pedido a actualizar.
+ * @param newStatus Nuevo código de estatus numérico.
+ * @param onComplete Callback ejecutado tras completar la actualización HTTP.
+ * @return Unit.
+ */
+private fun updateStatus(orderId: Int, newStatus: Int, onComplete: () -> Unit) {
+    thread {
+        try {
+            val url = java.net.URL("${ServerConfig.BASE_URL}/api/pedidos/$orderId/estatus")
+            val conn = url.openConnection() as java.net.HttpURLConnection
+            applySslBypass(conn)
+            conn.requestMethod = "PUT"
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            conn.doOutput = true
+
+            val body = JSONObject().apply { put("estatus", newStatus) }
+            conn.outputStream.use { os -> os.write(body.toString().toByteArray(Charsets.UTF_8)) }
+
+            conn.responseCode
+        } catch (_: Exception) {
+        } finally {
+            onComplete() // Refrescar detalles al finalizar
+        }
+    }
 }
 ```
 
 ---
 
-## 10. Carpeta UI - Módulo de Repartidor (`ui/repartidor`)
+## 10. Carpeta UI - Panel Repartidor (`ui/repartidor`)
 
-Esta carpeta contiene la interfaz utilizada por los repartidores de flotilla para ver sus entregas, actualizar los estados de los pedidos y gestionar los datos de su perfil.
+Esta carpeta concentra las pantallas exclusivas para los repartidores de la flotilla, ofreciendo la consulta de pedidos asignados, transmisión de ubicación GPS por MQTT y actualización de estatus de entregas.
 
 ---
 
 ### `mobile/src/main/java/mx/utng/deliverytrack/mobile/ui/repartidor/MisPedidosRepartidorScreen.kt`
-**Funcionalidad:** Vista principal para repartidores. Posee una barra de navegación inferior con 2 pestañas ("Mis Entregas" y "Perfil"). Permite filtrar los pedidos asignados por estado, ver tarjetas detalladas de cada entrega y editar la información de la cuenta personal (nombre, teléfono y contraseña).
+**Funcionalidad:** Lista interactiva de entregas asignadas al repartidor autenticado. Se conecta al gestor MQTT `MobileMqttManager` para iniciar la transmisión en vivo de coordenadas de ubicación del repartidor al backend.
 
 ```kotlin
 package mx.utng.deliverytrack.mobile.ui.repartidor
 
-import android.widget.Toast
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
+import mx.utng.deliverytrack.mobile.data.models.Pedido
+import mx.utng.deliverytrack.mobile.mqtt.MobileMqttManager
 import mx.utng.deliverytrack.mobile.ui.auth.UserSession
 import mx.utng.deliverytrack.shared.config.ServerConfig
 import org.json.JSONArray
-import org.json.JSONObject
 import kotlin.concurrent.thread
 
+/**
+ * Bypass de validación SSL.
+ *
+ * @param conn Conexión HttpURLConnection.
+ * @return Unit.
+ */
 private fun applySslBypass(conn: java.net.HttpURLConnection) {
     if (conn is javax.net.ssl.HttpsURLConnection) {
         try {
@@ -2278,13 +2322,14 @@ private fun applySslBypass(conn: java.net.HttpURLConnection) {
     }
 }
 
-data class PedidoCard(
-    val idPedido: Int,
-    val nombreCliente: String,
-    val direccion: String,
-    val estatus: Int
-)
-
+/**
+ * Pantalla principal del Repartidor para visualizar sus pedidos asignados e iniciar el seguimiento MQTT.
+ *
+ * @param userSession Sesión activa del repartidor logueado.
+ * @param onVerDetalleClick Callback invocado al presionar un pedido para abrir su detalle.
+ * @param onLogoutClick Callback para cerrar sesión.
+ * @return Unit.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MisPedidosRepartidorScreen(
@@ -2293,21 +2338,28 @@ fun MisPedidosRepartidorScreen(
     onLogoutClick: () -> Unit
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-    var currentTab by remember { mutableIntStateOf(0) } // 0: Mis Entregas, 1: Perfil
-    var pedidos by remember { mutableStateOf<List<PedidoCard>>(emptyList()) }
+    var pedidos by remember { mutableStateOf<List<Pedido>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
-    var selectedEstatusFilter by remember { mutableStateOf<Int?>(null) }
 
-    // Estados para la pestaña de Perfil
-    var profileNombre by remember { mutableStateOf(userSession.nombreCompleto) }
-    var profileTelefono by remember { mutableStateOf(userSession.telefono) }
+    val primaryColor = Color(0xFF15803D) // Verde distintivo del repartidor
+    val bgGray = Color(0xFFF8FAFC)
 
-    val primaryBlue = Color(0xFF1A3A6B)
-    val accentBlue = Color(0xFF2563EB)
+    // Inicializar y gestionar el ciclo de vida de la conexión MQTT de telemetría GPS
+    DisposableEffect(userSession.idUser) {
+        val mqttManager = MobileMqttManager()
+        // Conectar al broker MQTT con un ID de cliente único por repartidor
+        mqttManager.connect("mobile_courier_${userSession.idUser}") {
+            // Publicar coordenada inicial simulada al confirmar la conexión
+            mqttManager.publishTelemetry(userSession.idUser, 20.9148, -101.4044, 25.0f)
+        }
+        onDispose {
+            // Desconectar limpiamente el cliente MQTT al salir de la pantalla
+            mqttManager.disconnect()
+        }
+    }
 
-    fun fetchRepartidorPedidos() {
+    // Función interna para consultar la lista de pedidos asignados al repartidor
+    fun loadMisPedidos() {
         isLoading = true
         thread {
             try {
@@ -2315,132 +2367,100 @@ fun MisPedidosRepartidorScreen(
                 val conn = url.openConnection() as java.net.HttpURLConnection
                 applySslBypass(conn)
                 conn.requestMethod = "GET"
+                conn.connectTimeout = 5000
 
                 if (conn.responseCode == 200) {
                     val text = conn.inputStream.bufferedReader().readText()
                     val arr = JSONArray(text)
-                    val list = (0 until arr.length()).map {
-                        val obj = arr.getJSONObject(it)
-                        PedidoCard(
-                            idPedido = obj.getInt("id_pedido"),
-                            nombreCliente = obj.getString("nombre_cliente"),
-                            direccion = obj.getString("direccion"),
-                            estatus = obj.getInt("estatus")
+                    val list = (0 until arr.length()).map { index ->
+                        val obj = arr.getJSONObject(index)
+                        Pedido(
+                            id = obj.getInt("id_pedido"),
+                            nombreCliente = obj.optString("nombre_cliente", ""),
+                            telefono = obj.optString("telefono", ""),
+                            direccion = obj.optString("direccion", ""),
+                            referenciaLugar = obj.optString("referencia_lugar", ""),
+                            descripcionPedido = obj.optString("descripcion_pedido", ""),
+                            idRepartidor = obj.optInt("id_repartidor", userSession.idUser),
+                            estatus = obj.optInt("estatus", 1)
                         )
                     }
-                    pedidos = list
+                    (context as? android.app.Activity)?.runOnUiThread {
+                        pedidos = list
+                        isLoading = false
+                    }
+                } else {
+                    (context as? android.app.Activity)?.runOnUiThread { isLoading = false }
                 }
             } catch (_: Exception) {
-            } finally {
-                isLoading = false
+                (context as? android.app.Activity)?.runOnUiThread { isLoading = false }
             }
         }
     }
 
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                fetchRepartidorPedidos()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
-
-    val filteredPedidos = remember(pedidos, selectedEstatusFilter) {
-        if (selectedEstatusFilter == null) pedidos else pedidos.filter { it.estatus == selectedEstatusFilter }
+    LaunchedEffect(userSession.idUser) {
+        loadMisPedidos()
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(if (currentTab == 0) "Mis Entregas" else "Mi Perfil", fontWeight = FontWeight.Bold, color = Color.White)
+                    Column {
+                        Text("Mis Entregas", fontWeight = FontWeight.Bold, color = Color.White)
+                        Text("Repartidor: ${userSession.nombreCompleto}", fontSize = 12.sp, color = Color.White.copy(alpha = 0.8f))
+                    }
                 },
                 actions = {
-                    IconButton(onClick = onLogoutClick) {
-                        Icon(Icons.Default.ExitToApp, contentDescription = "Cerrar sesión", tint = Color.White)
+                    IconButton(onClick = { loadMisPedidos() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Actualizar", tint = Color.White)
+                    }
+                    TextButton(onClick = onLogoutClick) {
+                        Text("Salir", color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = primaryBlue)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = primaryColor)
             )
-        },
-        bottomBar = {
-            NavigationBar(containerColor = Color.White) {
-                NavigationBarItem(
-                    selected = currentTab == 0,
-                    onClick = { currentTab = 0 },
-                    icon = { Icon(Icons.Default.List, contentDescription = "Mis Entregas") },
-                    label = { Text("Mis Entregas") }
-                )
-                NavigationBarItem(
-                    selected = currentTab == 1,
-                    onClick = { currentTab = 1 },
-                    icon = { Icon(Icons.Default.Person, contentDescription = "Perfil") },
-                    label = { Text("Perfil") }
-                )
-            }
         }
-    ) { padding ->
-        Box(
+    ) { innerPadding ->
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .background(Color(0xFFF1F5F9))
+                .padding(innerPadding)
+                .background(bgGray)
+                .padding(16.dp)
         ) {
-            if (currentTab == 0) {
-                // Lista de pedidos del repartidor
-                LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(filteredPedidos) { item ->
-                        PedidoItemCard(item = item, onClick = { onVerDetalleClick(item.idPedido) })
-                    }
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else if (pedidos.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No tienes pedidos asignados")
                 }
             } else {
-                // Pestaña de Perfil
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                // Renderizado de lista de tarjetas de pedidos
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    Text("INFORMACIÓN DEL PERFIL", fontWeight = FontWeight.Bold)
-                    OutlinedTextField(
-                        value = profileNombre,
-                        onValueChange = { profileNombre = it },
-                        label = { Text("Nombre Completo") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = profileTelefono,
-                        onValueChange = { profileTelefono = it },
-                        label = { Text("Teléfono") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    items(pedidos) { pedido ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onVerDetalleClick(pedido.id) }, // Invocación de detalle
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text("Pedido #${pedido.id}", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                Text("Cliente: ${pedido.nombreCliente}", fontSize = 14.sp)
+                                Text("Dirección: ${pedido.direccion}", fontSize = 12.sp, color = Color.Gray)
+                            }
+                        }
+                    }
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun PedidoItemCard(item: PedidoCard, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("Pedido #${item.idPedido}", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            Text(item.nombreCliente, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-            Text(item.direccion, fontSize = 13.sp, color = Color.Gray)
         }
     }
 }
@@ -2449,7 +2469,7 @@ fun PedidoItemCard(item: PedidoCard, onClick: () -> Unit) {
 ---
 
 ### `mobile/src/main/java/mx/utng/deliverytrack/mobile/ui/repartidor/DetallePedidoRepartidorActivity.kt`
-**Funcionalidad:** Vista detallada de pedido para el repartidor. Le permite avanzar el flujo de trabajo de la entrega a través de peticiones HTTP PATCH al servidor: Aceptar Pedido (estatus 1), Iniciar Ruta/En camino (estatus 3), Marcar como Entregado (estatus 6) o Rechazar Pedido (estatus 4). Además, lanza la navegación GPS directa en Google Maps (`google.navigation:q=direccion`).
+**Funcionalidad:** Vista detallada de un pedido asignado al repartidor. Permite cambiar el estado de la entrega en tiempo real (Marcar "En camino", "Entregado", etc.) y refrescar el estado.
 
 ```kotlin
 package mx.utng.deliverytrack.mobile.ui.repartidor
@@ -2463,27 +2483,24 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import mx.utng.deliverytrack.shared.config.ServerConfig
 import org.json.JSONObject
 import kotlin.concurrent.thread
 
+/**
+ * Aplicación de bypass SSL para peticiones del repartidor.
+ *
+ * @param conn Conexión HttpURLConnection.
+ * @return Unit.
+ */
 private fun applySslBypass(conn: java.net.HttpURLConnection) {
     if (conn is javax.net.ssl.HttpsURLConnection) {
         try {
@@ -2502,34 +2519,32 @@ private fun applySslBypass(conn: java.net.HttpURLConnection) {
     }
 }
 
-data class RepartidorOrderDetail(
-    val idPedido: Int,
-    val nombreCliente: String,
-    val telefono: String,
-    val direccion: String,
-    val referencia: String,
-    val descripcion: String,
-    val estatus: Int,
-    val repartidorId: Int
-)
-
+/**
+ * Actividad Android de detalle y actualización de estatus para el repartidor.
+ */
 class DetallePedidoRepartidorActivity : ComponentActivity() {
 
     companion object {
+        /** Clave del Intent Extra con el ID del pedido */
         const val EXTRA_ORDER_ID = "extra_order_id"
+        /** Clave del Intent Extra con el ID del repartidor */
         const val EXTRA_COURIER_ID = "extra_courier_id"
     }
 
+    /**
+     * Ciclo onCreate de la actividad.
+     *
+     * @param savedInstanceState Estado previo guardado.
+     * @return Unit.
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val orderId = intent.getIntExtra(EXTRA_ORDER_ID, -1)
-        val courierId = intent.getIntExtra(EXTRA_COURIER_ID, -1)
+        val orderId = intent.getIntExtra(EXTRA_ORDER_ID, -1) // Extraer ID del pedido
 
         setContent {
             MaterialTheme {
                 DetallePedidoRepartidorScreen(
                     orderId = orderId,
-                    courierId = courierId,
                     onBackClick = { finish() }
                 )
             }
@@ -2537,23 +2552,26 @@ class DetallePedidoRepartidorActivity : ComponentActivity() {
     }
 }
 
+/**
+ * Screen Composable con la interfaz de actualización del repartidor.
+ *
+ * @param orderId ID del pedido asignado.
+ * @param onBackClick Callback para cerrar la pantalla.
+ * @return Unit.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetallePedidoRepartidorScreen(
     orderId: Int,
-    courierId: Int,
     onBackClick: () -> Unit
 ) {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-    var orderDetail by remember { mutableStateOf<RepartidorOrderDetail?>(null) }
+    var pedidoJson by remember { mutableStateOf<JSONObject?>(null) }
     var isLoading by remember { mutableStateOf(true) }
-    var isUpdatingStatus by remember { mutableStateOf(false) }
 
-    val primaryBlue = Color(0xFF1A3A6B)
+    val primaryGreen = Color(0xFF15803D)
 
-    fun fetchDetails() {
+    // Cargar información del pedido
+    fun loadOrder() {
         isLoading = true
         thread {
             try {
@@ -2564,17 +2582,7 @@ fun DetallePedidoRepartidorScreen(
 
                 if (conn.responseCode == 200) {
                     val text = conn.inputStream.bufferedReader().readText()
-                    val obj = JSONObject(text)
-                    orderDetail = RepartidorOrderDetail(
-                        idPedido = obj.getInt("id_pedido"),
-                        nombreCliente = obj.getString("nombre_cliente"),
-                        telefono = obj.getString("telefono"),
-                        direccion = obj.getString("direccion"),
-                        referencia = obj.optString("referencia_lugar", ""),
-                        descripcion = obj.optString("descripcion_pedido", ""),
-                        estatus = obj.getInt("estatus"),
-                        repartidorId = obj.optInt("id_repartidor", courierId)
-                    )
+                    pedidoJson = JSONObject(text)
                 }
             } catch (_: Exception) {
             } finally {
@@ -2583,138 +2591,111 @@ fun DetallePedidoRepartidorScreen(
         }
     }
 
-    // Actualiza el estatus del pedido vía PATCH al servidor REST
-    fun updateStatus(newStatus: Int) {
-        isUpdatingStatus = true
-        thread {
-            try {
-                val body = JSONObject().apply {
-                    put("estatus", newStatus)
-                    put("repartidorId", if (courierId > 0) courierId else 2)
-                }.toString()
-
-                val url = java.net.URL("${ServerConfig.BASE_URL}/api/pedidos/$orderId/estatus")
-                val conn = url.openConnection() as java.net.HttpURLConnection
-                applySslBypass(conn)
-                conn.requestMethod = "PATCH"
-                conn.setRequestProperty("Content-Type", "application/json")
-                conn.doOutput = true
-                conn.outputStream.write(body.toByteArray(Charsets.UTF_8))
-
-                if (conn.responseCode == 200) {
-                    fetchDetails()
-                }
-            } catch (_: Exception) {
-            } finally {
-                isUpdatingStatus = false
-            }
-        }
-    }
-
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                fetchDetails()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
+    LaunchedEffect(orderId) {
+        loadOrder()
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Detalle de Entrega #$orderId", fontWeight = FontWeight.Bold, color = Color.White) },
+                title = { Text("Detalle de Entrega #$orderId", color = Color.White, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Text("←", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = primaryBlue)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = primaryGreen)
             )
         }
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(Color(0xFFF1F5F9))
-        ) {
-            orderDetail?.let { item ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) { innerPadding ->
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (pedidoJson == null) {
+            Box(modifier = Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
+                Text("Error al cargar la información")
+            }
+        } else {
+            val obj = pedidoJson!!
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .background(Color(0xFFF8FAFC))
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
-                    // Botón de Inicio de Navegación GPS (Google Maps App Externa)
-                    if (item.estatus == 1 || item.estatus == 3 || item.estatus == 5) {
-                        Button(
-                            onClick = {
-                                val encodedAddress = java.net.URLEncoder.encode(item.direccion, "UTF-8")
-                                val gmmIntentUri = android.net.Uri.parse("google.navigation:q=$encodedAddress")
-                                val mapIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, gmmIntentUri).apply {
-                                    setPackage("com.google.android.apps.maps")
-                                }
-                                context.startActivity(mapIntent)
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
-                            modifier = Modifier.fillMaxWidth().height(48.dp)
-                        ) {
-                            Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color.White)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Iniciar Navegación GPS (Google Maps)", fontWeight = FontWeight.Bold, color = Color.White)
-                        }
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Cliente: ${obj.optString("nombre_cliente")}", fontWeight = FontWeight.Bold)
+                        Text("Teléfono: ${obj.optString("telefono")}")
+                        Text("Dirección: ${obj.optString("direccion")}")
+                        Text("Referencia: ${obj.optString("referencia_lugar")}")
+                        Text("Detalle: ${obj.optString("descripcion_pedido")}")
                     }
+                }
 
-                    // Botones interactivos de cambio de estatus de la entrega
-                    when (item.estatus) {
-                        2 -> { // Estado Pendiente -> Aceptar / Rechazar
-                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Button(
-                                    onClick = { updateStatus(4) },
-                                    modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
-                                ) {
-                                    Text("Rechazar", color = Color.White)
-                                }
-                                Button(
-                                    onClick = { updateStatus(1) },
-                                    modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A))
-                                ) {
-                                    Text("Aceptar Pedido", color = Color.White)
-                                }
-                            }
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Actualizar Estatus de Entrega", fontWeight = FontWeight.Bold, color = primaryGreen)
+
+                        // Botón para actualizar estado a 'En camino' (3)
+                        Button(
+                            onClick = { updateStatus(orderId, 3) { loadOrder() } },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B))
+                        ) {
+                            Text("En Camino")
                         }
-                        1 -> { // Estado Aceptado -> Transición a "En camino"
-                            Button(
-                                onClick = { updateStatus(3) },
-                                modifier = Modifier.fillMaxWidth().height(48.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
-                            ) {
-                                Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("En camino", fontWeight = FontWeight.Bold, color = Color.White)
-                            }
-                        }
-                        3, 5 -> { // Estado En camino -> Transición a "Entregado"
-                            Button(
-                                onClick = { updateStatus(6) },
-                                modifier = Modifier.fillMaxWidth().height(48.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A))
-                            ) {
-                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.White)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Marcar como Entregado", fontWeight = FontWeight.Bold, color = Color.White)
-                            }
+
+                        // Botón para actualizar estado a 'Entregado' (6)
+                        Button(
+                            onClick = { updateStatus(orderId, 6) { loadOrder() } },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
+                        ) {
+                            Text("Entregado")
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Actualiza el estatus del pedido desde el repartidor hacia la API REST.
+ *
+ * @param orderId ID del pedido.
+ * @param newStatus Nuevo código de estatus numérico.
+ * @param onComplete Callback ejecutado al finalizar.
+ * @return Unit.
+ */
+private fun updateStatus(orderId: Int, newStatus: Int, onComplete: () -> Unit) {
+    thread {
+        try {
+            val url = java.net.URL("${ServerConfig.BASE_URL}/api/pedidos/$orderId/estatus")
+            val conn = url.openConnection() as java.net.HttpURLConnection
+            applySslBypass(conn)
+            conn.requestMethod = "PUT"
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            conn.doOutput = true
+
+            val body = JSONObject().apply { put("estatus", newStatus) }
+            conn.outputStream.use { os -> os.write(body.toString().toByteArray(Charsets.UTF_8)) }
+
+            conn.responseCode
+        } catch (_: Exception) {
+        } finally {
+            onComplete()
         }
     }
 }
